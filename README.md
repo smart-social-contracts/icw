@@ -12,23 +12,27 @@ pip install internet-computer-wallet
 
 ```bash
 # Check balance (auto-converts to USD)
-icw balance
-icw balance -t cketh
-icw balance -p <principal> -s 1  # specific principal + subaccount
+icw balance                       # ckBTC (default)
+icw -t cketh balance              # ckETH
+icw -t icp balance                # ICP
+icw balance -p <principal> -s 1   # specific principal + subaccount
 
 # Transfer tokens
 icw transfer <recipient> 0.001
 icw transfer <recipient> 0.001 -s 1 -f 2  # to subaccount 1, from subaccount 2
 
 # Token info + current price
-icw info
-icw info -t icp
+icw info                          # ckBTC (default)
+icw -t icp info                   # ICP
 
 # Identity management
 icw id              # current identity + principal
 icw id list         # list all identities
 icw id use <name>   # switch identity
 icw id new <name>   # create new identity
+
+# Version
+icw --version
 ```
 
 ## Output
