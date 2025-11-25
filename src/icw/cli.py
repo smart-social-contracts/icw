@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """ICW - ICP Wallet CLI for ICRC-1 tokens (ckBTC, ckETH, ICP)."""
 import argparse
+
+from icw import __version__
 import json
 import platform
 import shutil
@@ -167,6 +169,7 @@ def cmd_info(args):
 
 def main():
     p = argparse.ArgumentParser(prog="icw", description="ICP Wallet CLI")
+    p.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
     p.add_argument("--network", "-n", default="ic")
     p.add_argument("--token", "-t", default="ckbtc", choices=TOKENS.keys())
     sub = p.add_subparsers(dest="cmd", required=True)
