@@ -2,6 +2,8 @@
 
 Simple CLI for managing ICRC-1 tokens (ckBTC, ckETH, ICP) on the Internet Computer.
 
+> ⚠️ **WARNING**: This is experimental software. Do not use with significant amounts of funds. Use at your own risk.
+
 ## Install
 
 ```bash
