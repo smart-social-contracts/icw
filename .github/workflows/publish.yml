@@ -69,3 +69,11 @@ jobs:
           git commit -m "Bump version to ${{ steps.bump_version.outputs.NEW_VERSION }}"
           git tag -a "v${{ steps.bump_version.outputs.NEW_VERSION }}" -m "Release v${{ steps.bump_version.outputs.NEW_VERSION }}"
           git push origin main --tags
+      
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.bump_version.outputs.NEW_VERSION }}" \
+            --title "v${{ steps.bump_version.outputs.NEW_VERSION }}" \
+            --generate-notes
