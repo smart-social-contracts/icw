@@ -94,7 +94,7 @@ def test_transfer():
     local_ledger = run(["dfx", "canister", "id", "ckbtc_ledger"])
     principal = get_principal()
 
-    # Transfer to self (subaccount 1)
+    # Transfer to self (subaccount 1) - no fee for this test ledger
     result = run(
         [
             "dfx",
@@ -105,7 +105,7 @@ def test_transfer():
             f"""(record {{
                 to = record {{ owner = principal "{principal}"; subaccount = opt blob "\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\01" }};
                 amount = 1_000_000;
-                fee = opt 10;
+                fee = null;
                 memo = null;
                 created_at_time = null;
                 from_subaccount = null
