@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "icw"
+version = "0.1.0"
+description = "CLI for ICRC-1 tokens (ckBTC, ckETH, ICP) on the Internet Computer"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+keywords = ["icp", "ckbtc", "icrc-1", "dfx", "wallet"]
+classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :: MIT License"]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.4", "black>=24.0"]
+
+[project.scripts]
+icw = "icw.cli:main"
+
+[project.urls]
+Repository = "https://github.com/smart-social-contracts/icw"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.black]
+line-length = 120
+target-version = ["py39"]
