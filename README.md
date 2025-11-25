@@ -54,6 +54,36 @@ All commands output JSON for easy parsing:
 
 - `-t, --token`: Token (ckbtc, cketh, icp). Default: ckbtc
 - `-n, --network`: Network (ic, local). Default: ic
+- `--ledger`: Override ledger canister ID (for local testing)
+- `--fee`: Override transfer fee (for local testing)
+
+## Local Development
+
+To use `icw` with a local dfx replica:
+
+```bash
+cd tests
+
+# Download ledger wasm artifacts
+./download_artifacts.sh
+
+# Start local replica
+dfx start --clean --background
+
+# Deploy test ledger with initial balance
+dfx deploy ckbtc_ledger --no-wallet --yes --argument='(variant { Init = record { 
+  minting_account = record { owner = principal "'$(dfx identity get-principal)'"; subaccount = null }; 
+  transfer_fee = 0; token_symbol = "ckBTC"; token_name = "ckBTC Test"; decimals = opt 8; 
+  metadata = vec {}; feature_flags = opt record { icrc2 = true };
+  initial_balances = vec { record { record { owner = principal "'$(dfx identity get-principal)'"; subaccount = null }; 100_000_000_000 } }; 
+  archive_options = record { num_blocks_to_archive = 1000; trigger_threshold = 2000; controller_id = principal "'$(dfx identity get-principal)'" } 
+} })'
+
+# Get ledger ID and use icw
+LEDGER=$(dfx canister id ckbtc_ledger)
+icw -n local balance --ledger $LEDGER
+icw -n local transfer <recipient> 0.01 --ledger $LEDGER --fee 0
+```
 
 ## Requirements
 
