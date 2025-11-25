@@ -31,36 +31,33 @@ def deploy_ledger():
     principal = get_principal()
     print(f"Deploying ledger for principal: {principal}")
 
-    init_arg = f"""(variant {{ Init = record {{
-        minting_account = record {{ owner = principal "{principal}"; subaccount = null }};
-        transfer_fee = 10;
-        token_symbol = "ckBTC";
-        token_name = "ckBTC Test";
-        decimals = opt 8;
-        max_memo_length = opt 80;
-        initial_balances = vec {{
-            record {{ record {{ owner = principal "{principal}"; subaccount = null }}; 100_000_000_000 }}
-        }};
-        feature_flags = opt record {{ icrc2 = true }};
-        archive_options = record {{
-            num_blocks_to_archive = 1000;
-            trigger_threshold = 2000;
-            controller_id = principal "{principal}";
-            cycles_for_archive_creation = opt 10_000_000_000_000;
-            max_transactions_per_response = null;
-            max_message_size_bytes = null;
-            node_max_memory_size_bytes = null
-        }}
-    }} }})"""
+    init_arg = (
+        "(variant { Init = record { "
+        f'minting_account = record {{ owner = principal "{principal}"; subaccount = null }}; '
+        "transfer_fee = 10; "
+        'token_symbol = "ckBTC"; '
+        'token_name = "ckBTC Test"; '
+        "decimals = opt 8; "
+        "metadata = vec {}; "
+        f'initial_balances = vec {{ record {{ record {{ owner = principal "{principal}"; subaccount = null }}; 100_000_000_000 }} }}; '
+        "feature_flags = opt record { icrc2 = true }; "
+        f'archive_options = record {{ num_blocks_to_archive = 1000; trigger_threshold = 2000; controller_id = principal "{principal}" }} '
+        "} })"
+    )
 
-    run(["dfx", "deploy", "ckbtc_ledger", "--argument", init_arg])
+    run(["dfx", "deploy", "ckbtc_ledger", "--no-wallet", "--yes", f"--argument={init_arg}"])
     return run(["dfx", "canister", "id", "ckbtc_ledger"])
 
 
 def deploy_indexer(ledger_id):
     """Deploy ckBTC indexer."""
-    init_arg = f'(opt variant {{ Init = record {{ ledger_id = principal "{ledger_id}" }} }})'
-    run(["dfx", "deploy", "ckbtc_indexer", "--argument", init_arg])
+    init_arg = (
+        f"(opt variant {{ Init = record {{ "
+        f'ledger_id = principal "{ledger_id}"; '
+        f"retrieve_blocks_from_ledger_interval_seconds = opt 1 "
+        f"}} }})"
+    )
+    run(["dfx", "deploy", "ckbtc_indexer", "--no-wallet", f"--argument={init_arg}"])
     return run(["dfx", "canister", "id", "ckbtc_indexer"])
 
 
