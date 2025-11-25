@@ -7,7 +7,6 @@ import sys
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from icw.cli import TOKENS
 
 NETWORK = "local"
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -62,58 +61,59 @@ def deploy_indexer(ledger_id):
 
 
 def test_balance():
-    """Test balance query."""
-    print("\n=== Test: Balance ===")
-    ledger_id, _, dec, _, _ = TOKENS["ckbtc"]
-
-    # Override ledger ID with local canister
+    """Test icw balance command."""
+    print("\n=== Test: icw balance ===")
     local_ledger = run(["dfx", "canister", "id", "ckbtc_ledger"])
-    principal = get_principal()
 
-    result = run(
-        [
-            "dfx",
-            "canister",
-            "call",
-            local_ledger,
-            "icrc1_balance_of",
-            f'(record {{ owner = principal "{principal}"; subaccount = null }})',
-        ]
+    # Test icw balance with --ledger override
+    result = subprocess.run(
+        [sys.executable, "-m", "icw.cli", "-n", "local", "balance", "-l", local_ledger],
+        capture_output=True,
+        text=True,
+        cwd=os.path.join(TEST_DIR, ".."),
+        env={**os.environ, "PYTHONPATH": os.path.join(TEST_DIR, "..", "src")},
     )
-    print(f"Balance result: {result}")
+    print(f"icw balance: {result.stdout}")
+    assert result.returncode == 0, f"icw balance failed: {result.stderr}"
 
-    # Parse result (format: "(1_000 : nat)")
-    balance = int(result.replace("(", "").replace(")", "").replace("_", "").replace(": nat", "").strip())
-    assert balance == 100_000_000_000, f"Expected 100_000_000_000, got {balance}"
-    print(f"✓ Balance correct: {balance / 10**8} ckBTC")
+    data = json.loads(result.stdout)
+    assert data["balance"] == 1000.0, f"Expected 1000.0, got {data['balance']}"
+    assert data["raw"] == 100_000_000_000
+    print(f"✓ Balance correct: {data['balance']} ckBTC")
 
 
 def test_transfer():
-    """Test transfer."""
-    print("\n=== Test: Transfer ===")
+    """Test icw transfer command."""
+    print("\n=== Test: icw transfer ===")
     local_ledger = run(["dfx", "canister", "id", "ckbtc_ledger"])
     principal = get_principal()
 
-    # Transfer to self (subaccount 1) - no fee for this test ledger
-    result = run(
+    # Test icw transfer with --ledger override
+    result = subprocess.run(
         [
-            "dfx",
-            "canister",
-            "call",
+            sys.executable,
+            "-m",
+            "icw.cli",
+            "-n",
+            "local",
+            "transfer",
+            principal,
+            "0.01",
+            "-s",
+            "1",  # to subaccount 1
+            "-l",
             local_ledger,
-            "icrc1_transfer",
-            f"""(record {{
-                to = record {{ owner = principal "{principal}"; subaccount = opt blob "\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\00\\01" }};
-                amount = 1_000_000;
-                fee = null;
-                memo = null;
-                created_at_time = null;
-                from_subaccount = null
-            }})""",
-        ]
+        ],
+        capture_output=True,
+        text=True,
+        cwd=os.path.join(TEST_DIR, ".."),
+        env={**os.environ, "PYTHONPATH": os.path.join(TEST_DIR, "..", "src")},
     )
-    print(f"Transfer result: {result}")
-    assert "Ok" in result, f"Transfer failed: {result}"
+    print(f"icw transfer: {result.stdout}")
+    assert result.returncode == 0, f"icw transfer failed: {result.stderr}"
+
+    data = json.loads(result.stdout)
+    assert data.get("ok") or "block" in str(data), f"Transfer failed: {data}"
     print("✓ Transfer successful")
 
 

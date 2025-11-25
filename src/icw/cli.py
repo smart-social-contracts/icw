@@ -104,6 +104,7 @@ def subaccount(n):
 
 def cmd_balance(args):
     ledger, name, dec, _, cg_id = TOKENS[args.token]
+    ledger = args.ledger or ledger  # allow override for testing
     p = args.principal or principal()
     bal = int(
         dfx(
@@ -126,6 +127,7 @@ def cmd_balance(args):
 
 def cmd_transfer(args):
     ledger, name, dec, fee, cg_id = TOKENS[args.token]
+    ledger = args.ledger or ledger  # allow override for testing
     amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
     r = dfx(
         [
@@ -171,12 +173,14 @@ def main():
     b = sub.add_parser("balance", aliases=["b"])
     b.add_argument("--principal", "-p")
     b.add_argument("--subaccount", "-s", type=int, default=0)
+    b.add_argument("--ledger", "-l", help="Override ledger canister ID")
 
     t = sub.add_parser("transfer", aliases=["t"])
     t.add_argument("recipient")
     t.add_argument("amount")
     t.add_argument("--subaccount", "-s", type=int, default=0)
     t.add_argument("--from-subaccount", "-f", type=int, default=0)
+    t.add_argument("--ledger", "-l", help="Override ledger canister ID")
 
     sub.add_parser("info", aliases=["i"])
 
