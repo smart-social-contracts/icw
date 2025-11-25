@@ -23,6 +23,12 @@ icw transfer <recipient> 0.001 -s 1 -f 2  # to subaccount 1, from subaccount 2
 # Token info + current price
 icw info
 icw info -t icp
+
+# Identity management
+icw id              # current identity + principal
+icw id list         # list all identities
+icw id use <name>   # switch identity
+icw id new <name>   # create new identity
 ```
 
 ## Output
