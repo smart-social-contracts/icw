@@ -23,3 +23,25 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: python tests/test_cli.py
+
+  integration:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/smart-social-contracts/icp-dev-env:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        run: |
+          cd tests
+          chmod +x download_artifacts.sh
+          ./download_artifacts.sh
+      - name: Start dfx
+        run: |
+          cd tests
+          dfx start --clean --background
+          sleep 5
+      - name: Run integration tests
+        run: python tests/test_integration.py
+      - name: Stop dfx
+        if: always()
+        run: dfx stop || true

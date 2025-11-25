@@ -5,3 +5,6 @@ build/
 .pytest_cache/
 .coverage
 *.pyc
+.ruff_cache/
+tests/artifacts/
+.dfx/
