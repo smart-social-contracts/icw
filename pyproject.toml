@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "icw"
+name = "internet-computer-wallet"
 version = "0.1.0"
 description = "CLI for ICRC-1 tokens (ckBTC, ckETH, ICP) on the Internet Computer"
 readme = "README.md"

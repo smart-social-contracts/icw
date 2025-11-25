@@ -5,7 +5,7 @@ Simple CLI for managing ICRC-1 tokens (ckBTC, ckETH, ICP) on the Internet Comput
 ## Install
 
 ```bash
-pip install icw
+pip install internet-computer-wallet
 ```
 
 ## Usage
