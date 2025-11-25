@@ -95,7 +95,7 @@ def test_transfer():
     local_ledger = run(["dfx", "canister", "id", "ckbtc_ledger"])
     principal = get_principal()
 
-    result = icw("-n", "local", "transfer", principal, "0.01", "-s", "1", "-l", local_ledger)
+    result = icw("-n", "local", "transfer", principal, "0.01", "-s", "1", "-l", local_ledger, "--fee", "0")
     print(f"icw transfer: {result.stdout}")
     if result.returncode != 0:
         print(f"stderr: {result.stderr}")

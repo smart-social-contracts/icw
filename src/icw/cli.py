@@ -128,6 +128,7 @@ def cmd_balance(args):
 def cmd_transfer(args):
     ledger, name, dec, fee, cg_id = TOKENS[args.token]
     ledger = args.ledger or ledger  # allow override for testing
+    fee = args.fee if args.fee is not None else fee  # allow override for testing
     amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
     r = dfx(
         [
@@ -181,6 +182,7 @@ def main():
     t.add_argument("--subaccount", "-s", type=int, default=0)
     t.add_argument("--from-subaccount", "-f", type=int, default=0)
     t.add_argument("--ledger", "-l", help="Override ledger canister ID")
+    t.add_argument("--fee", type=int, help="Override transfer fee")
 
     sub.add_parser("info", aliases=["i"])
 
