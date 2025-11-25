@@ -60,20 +60,27 @@ def deploy_indexer(ledger_id):
     return run(["dfx", "canister", "id", "ckbtc_indexer"])
 
 
+def icw(*args):
+    """Run icw CLI from tests directory (where dfx.json is)."""
+    result = subprocess.run(
+        [sys.executable, "-m", "icw.cli"] + list(args),
+        capture_output=True,
+        text=True,
+        cwd=TEST_DIR,  # must be where dfx.json is
+        env={**os.environ, "PYTHONPATH": os.path.join(TEST_DIR, "..", "src")},
+    )
+    return result
+
+
 def test_balance():
     """Test icw balance command."""
     print("\n=== Test: icw balance ===")
     local_ledger = run(["dfx", "canister", "id", "ckbtc_ledger"])
 
-    # Test icw balance with --ledger override
-    result = subprocess.run(
-        [sys.executable, "-m", "icw.cli", "-n", "local", "balance", "-l", local_ledger],
-        capture_output=True,
-        text=True,
-        cwd=os.path.join(TEST_DIR, ".."),
-        env={**os.environ, "PYTHONPATH": os.path.join(TEST_DIR, "..", "src")},
-    )
+    result = icw("-n", "local", "balance", "-l", local_ledger)
     print(f"icw balance: {result.stdout}")
+    if result.returncode != 0:
+        print(f"stderr: {result.stderr}")
     assert result.returncode == 0, f"icw balance failed: {result.stderr}"
 
     data = json.loads(result.stdout)
@@ -88,28 +95,10 @@ def test_transfer():
     local_ledger = run(["dfx", "canister", "id", "ckbtc_ledger"])
     principal = get_principal()
 
-    # Test icw transfer with --ledger override
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "icw.cli",
-            "-n",
-            "local",
-            "transfer",
-            principal,
-            "0.01",
-            "-s",
-            "1",  # to subaccount 1
-            "-l",
-            local_ledger,
-        ],
-        capture_output=True,
-        text=True,
-        cwd=os.path.join(TEST_DIR, ".."),
-        env={**os.environ, "PYTHONPATH": os.path.join(TEST_DIR, "..", "src")},
-    )
+    result = icw("-n", "local", "transfer", principal, "0.01", "-s", "1", "-l", local_ledger)
     print(f"icw transfer: {result.stdout}")
+    if result.returncode != 0:
+        print(f"stderr: {result.stderr}")
     assert result.returncode == 0, f"icw transfer failed: {result.stderr}"
 
     data = json.loads(result.stdout)
@@ -117,29 +106,18 @@ def test_transfer():
     print("✓ Transfer successful")
 
 
-def test_icw_cli():
-    """Test icw CLI against local ledger."""
-    print("\n=== Test: ICW CLI ===")
+def test_icw_id():
+    """Test icw id command."""
+    print("\n=== Test: icw id ===")
 
-    # Get local ledger ID
-    local_ledger = run(["dfx", "canister", "id", "ckbtc_ledger"])
-    print(f"Local ledger: {local_ledger}")
-
-    # Test icw id command
-    result = subprocess.run(
-        [sys.executable, "-m", "icw.cli", "id"],
-        capture_output=True,
-        text=True,
-        cwd=os.path.join(TEST_DIR, ".."),
-        env={**os.environ, "PYTHONPATH": os.path.join(TEST_DIR, "..", "src")},
-    )
+    result = icw("id")
     print(f"icw id: {result.stdout}")
     assert result.returncode == 0, f"icw id failed: {result.stderr}"
 
     data = json.loads(result.stdout)
     assert "identity" in data
     assert "principal" in data
-    print("✓ ICW CLI works")
+    print("✓ icw id works")
 
 
 def main():
@@ -164,9 +142,9 @@ def main():
     print(f"Indexer ID: {indexer_id}")
 
     # Run tests
+    test_icw_id()
     test_balance()
     test_transfer()
-    test_icw_cli()
 
     print("\n" + "=" * 60)
     print("✅ All integration tests passed!")
