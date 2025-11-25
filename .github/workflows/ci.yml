@@ -30,6 +30,8 @@ jobs:
       image: ghcr.io/smart-social-contracts/icp-dev-env:latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup dfx
+        run: dfxvm default 0.24.3
       - name: Download artifacts
         run: |
           cd tests
