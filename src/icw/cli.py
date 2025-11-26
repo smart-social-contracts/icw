@@ -97,10 +97,39 @@ def cmd_id(args):
         )
 
 
-def subaccount(n):
-    if n == 0:
+def subaccount(s):
+    """Convert subaccount input to Candid blob format.
+
+    Accepts:
+    - Integer (0-255): last byte of 32-byte blob
+    - Hex string (64 chars): direct 32-byte blob
+    - Arbitrary text: ASCII bytes, right-padded to 32 bytes
+    """
+    if s is None or s == "" or s == "0" or s == 0:
         return "null"
-    blob = "\\00" * 31 + "\\{:02x}".format(n)
+
+    # Try as integer first
+    try:
+        n = int(s)
+        if 0 <= n <= 255:
+            blob = "\\00" * 31 + "\\{:02x}".format(n)
+            return f'opt blob "{blob}"'
+    except (ValueError, TypeError):
+        pass
+
+    s = str(s)
+
+    # 64-char hex string → direct 32 bytes
+    if len(s) == 64 and all(c in "0123456789abcdefABCDEF" for c in s):
+        blob = "".join(f"\\{s[i:i+2]}" for i in range(0, 64, 2))
+        return f'opt blob "{blob}"'
+
+    # Arbitrary text → ASCII bytes, padded to 32 bytes
+    raw = s.encode("ascii")
+    if len(raw) > 32:
+        raise ValueError(f"Subaccount text too long: {len(raw)} bytes (max 32)")
+    padded = raw.ljust(32, b"\x00")
+    blob = "".join(f"\\{b:02x}" for b in padded)
     return f'opt blob "{blob}"'
 
 
@@ -176,14 +205,14 @@ def main():
 
     b = sub.add_parser("balance", aliases=["b"])
     b.add_argument("--principal", "-p")
-    b.add_argument("--subaccount", "-s", type=int, default=0)
+    b.add_argument("--subaccount", "-s", default="0")
     b.add_argument("--ledger", "-l", help="Override ledger canister ID")
 
     t = sub.add_parser("transfer", aliases=["t"])
     t.add_argument("recipient")
     t.add_argument("amount")
-    t.add_argument("--subaccount", "-s", type=int, default=0)
-    t.add_argument("--from-subaccount", "-f", type=int, default=0)
+    t.add_argument("--subaccount", "-s", default="0")
+    t.add_argument("--from-subaccount", "-f", default="0")
     t.add_argument("--ledger", "-l", help="Override ledger canister ID")
     t.add_argument("--fee", type=int, help="Override transfer fee")
 

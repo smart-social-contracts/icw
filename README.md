@@ -19,9 +19,15 @@ icw -t cketh balance              # ckETH
 icw -t icp balance                # ICP
 icw balance -p <principal> -s 1   # specific principal + subaccount
 
+# Subaccounts (integer, hex, or text)
+icw balance -s 1                  # integer (0-255)
+icw balance -s savings            # text (max 32 ASCII chars)
+icw balance -s 0a1b2c...          # hex (64 chars = 32 bytes)
+
 # Transfer tokens
 icw transfer <recipient> 0.001
-icw transfer <recipient> 0.001 -s 1 -f 2  # to subaccount 1, from subaccount 2
+icw transfer <recipient> 0.001 -s 1 -f 2       # to subaccount 1, from subaccount 2
+icw transfer <recipient> 0.001 -s savings      # to "savings" subaccount
 
 # Token info + current price
 icw info                          # ckBTC (default)
