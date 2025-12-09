@@ -11,8 +11,12 @@ def test_tokens():
     assert "ckbtc" in TOKENS, "ckbtc should be in TOKENS"
     assert "cketh" in TOKENS, "cketh should be in TOKENS"
     assert "icp" in TOKENS, "icp should be in TOKENS"
+    assert "ckusdc" in TOKENS, "ckusdc should be in TOKENS"
+    assert "ckusdt" in TOKENS, "ckusdt should be in TOKENS"
     assert TOKENS["ckbtc"][0] == "mxzaz-hqaaa-aaaar-qaada-cai"
     assert TOKENS["ckbtc"][2] == 8  # decimals
+    assert TOKENS["ckusdc"][2] == 6  # stablecoins have 6 decimals
+    assert TOKENS["ckusdt"][2] == 6  # stablecoins have 6 decimals
     print("✓ test_tokens")
 
 

@@ -17,6 +17,8 @@ pip install internet-computer-wallet
 icw balance                       # ckBTC (default)
 icw -t cketh balance              # ckETH
 icw -t icp balance                # ICP
+icw -t ckusdc balance             # ckUSDC
+icw -t ckusdt balance             # ckUSDT
 icw balance -p <principal> -s 1   # specific principal + subaccount
 
 # Subaccounts (integer, hex, or text)
@@ -42,6 +44,12 @@ icw id new <name>   # create new identity
 
 # Version
 icw --version
+
+# Web UI (optional)
+pip install internet-computer-wallet[ui]
+icw ui                            # Opens browser at http://localhost:5555
+icw ui --port 8080                # Custom port
+icw ui --no-browser               # Don't auto-open browser
 ```
 
 ## Output
@@ -61,7 +69,7 @@ All commands output JSON for easy parsing:
 
 ## Options
 
-- `-t, --token`: Token (ckbtc, cketh, icp). Default: ckbtc
+- `-t, --token`: Token (ckbtc, cketh, icp, ckusdc, ckusdt). Default: ckbtc
 - `-n, --network`: Network (ic, local). Default: ic
 - `--ledger`: Override ledger canister ID (for local testing)
 - `--fee`: Override transfer fee (for local testing)

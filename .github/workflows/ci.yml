@@ -24,6 +24,31 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: python tests/test_cli.py
 
+  test-api:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/smart-social-contracts/icp-dev-env:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: pip install -e ".[ui,test]"
+      - name: Run API tests
+        run: python tests/test_api.py
+
+  test-ui:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/smart-social-contracts/icp-dev-env:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          pip install -e ".[ui,test]"
+          playwright install chromium
+          playwright install-deps chromium
+      - name: Run UI tests
+        run: python tests/test_ui.py
+
   integration:
     runs-on: ubuntu-latest
     container:

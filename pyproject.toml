@@ -14,9 +14,12 @@ classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :
 
 [project.optional-dependencies]
 dev = ["ruff>=0.4", "black>=24.0"]
+ui = ["fastapi>=0.109.0", "uvicorn>=0.27.0"]
+test = ["httpx>=0.26.0", "playwright>=1.40.0"]
 
 [project.scripts]
 icw = "icw.cli:main"
+icw-ui = "icw.cli:ui"
 
 [project.urls]
 Repository = "https://github.com/smart-social-contracts/icw"

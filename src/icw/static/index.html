@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICW Wallet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .token-icon { font-size: 1.5rem; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div x-data="wallet()" x-init="init()" class="max-w-4xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">₿</span>
+                <h1 class="text-xl font-semibold text-gray-900">ICW</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <!-- Network selector -->
+                <select x-model="network" @change="refreshBalances()" 
+                    class="text-sm border-0 bg-gray-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-200">
+                    <option value="ic">Mainnet</option>
+                    <option value="local">Local</option>
+                </select>
+                <!-- Identity selector -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" @click.outside="open = false"
+                        class="flex items-center gap-2 text-sm bg-gray-100 rounded-lg px-3 py-2 hover:bg-gray-200 transition">
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span x-text="identity || 'Loading...'"></span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-cloak x-transition
+                        class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1 z-10">
+                        <template x-for="id in identities" :key="id.name">
+                            <button @click="switchIdentity(id.name); open = false"
+                                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                                :class="id.active ? 'text-gray-900 font-medium' : 'text-gray-600'">
+                                <span class="w-2 h-2 rounded-full" :class="id.active ? 'bg-green-500' : 'bg-gray-300'"></span>
+                                <span x-text="id.name"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Principal display -->
+        <div class="mb-8 text-center">
+            <p class="text-xs text-gray-400 mb-1">Your Principal</p>
+            <p class="text-sm text-gray-600 font-mono bg-gray-100 rounded-lg px-4 py-2 inline-block"
+               x-text="principal || '...'"></p>
+        </div>
+
+        <!-- Balance cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
+            <template x-for="bal in balances" :key="bal.token">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer"
+                     @click="selectedToken = bal.token.toLowerCase(); transferAmount = ''">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="token-icon" x-text="tokenIcon(bal.token)"></span>
+                        <span class="text-xs font-medium px-2 py-1 rounded-full"
+                              :class="bal.token === selectedToken.toUpperCase() ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'"
+                              x-text="bal.token"></span>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-2xl font-semibold text-gray-900" x-text="formatBalance(bal.balance)"></p>
+                        <p class="text-sm text-gray-500">
+                            <span x-show="bal.usd !== null" x-text="'$' + bal.usd?.toLocaleString()"></span>
+                            <span x-show="bal.usd === null" class="text-gray-400">Price unavailable</span>
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-50">
+                        <p class="text-xs text-gray-400">
+                            1 <span x-text="bal.token"></span> = $<span x-text="bal.price?.toLocaleString() || '—'"></span>
+                        </p>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Transfer form -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 mb-6">Send</h2>
+            
+            <form @submit.prevent="transfer()" class="space-y-5">
+                <!-- Token selector -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Token</label>
+                    <div class="flex gap-2 flex-wrap">
+                        <template x-for="t in ['ckbtc', 'cketh', 'icp', 'ckusdc', 'ckusdt']" :key="t">
+                            <button type="button" @click="selectedToken = t"
+                                class="flex-1 min-w-[80px] py-3 rounded-xl text-sm font-medium transition"
+                                :class="selectedToken === t 
+                                    ? 'bg-gray-900 text-white' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">
+                                <span x-text="t.toUpperCase()"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Recipient -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Recipient Principal</label>
+                    <input type="text" x-model="recipient" placeholder="xxxxx-xxxxx-xxxxx-xxxxx-xxx"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-0 font-mono text-sm"
+                        required>
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                    <div class="relative">
+                        <input type="text" x-model="transferAmount" placeholder="0.00"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-0 text-lg"
+                            required>
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400"
+                              x-text="selectedToken.toUpperCase()"></span>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-400" x-show="transferAmount && getPrice(selectedToken)">
+                        ≈ $<span x-text="(parseFloat(transferAmount || 0) * getPrice(selectedToken)).toFixed(2)"></span>
+                    </p>
+                </div>
+
+                <!-- Advanced options toggle -->
+                <div x-data="{ showAdvanced: false }">
+                    <button type="button" @click="showAdvanced = !showAdvanced" 
+                        class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
+                        <svg class="w-4 h-4 transition" :class="showAdvanced && 'rotate-90'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                        Advanced options
+                    </button>
+                    <div x-show="showAdvanced" x-collapse class="mt-4 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">To Subaccount</label>
+                                <input type="text" x-model="toSubaccount" placeholder="0"
+                                    class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-0 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">From Subaccount</label>
+                                <input type="text" x-model="fromSubaccount" placeholder="0"
+                                    class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-0 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Memo</label>
+                            <input type="text" x-model="memo" placeholder="Optional memo (max 32 bytes)"
+                                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-gray-400 focus:ring-0 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" :disabled="loading"
+                    class="w-full py-4 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!loading">Send <span x-text="selectedToken.toUpperCase()"></span></span>
+                    <span x-show="loading">Sending...</span>
+                </button>
+            </form>
+
+            <!-- Result message -->
+            <div x-show="message" x-cloak x-transition class="mt-4 p-4 rounded-xl text-sm"
+                 :class="messageType === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'">
+                <span x-text="message"></span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-8 text-center text-xs text-gray-400">
+            <p>ICW Wallet • Running locally on your machine</p>
+        </footer>
+    </div>
+
+    <script>
+        function wallet() {
+            return {
+                network: 'ic',
+                identity: null,
+                principal: null,
+                identities: [],
+                balances: [],
+                selectedToken: 'ckbtc',
+                recipient: '',
+                transferAmount: '',
+                toSubaccount: '0',
+                fromSubaccount: '0',
+                memo: '',
+                loading: false,
+                message: '',
+                messageType: 'success',
+
+                async init() {
+                    await this.loadIdentity();
+                    await this.loadIdentities();
+                    await this.refreshBalances();
+                },
+
+                async loadIdentity() {
+                    try {
+                        const res = await fetch('/api/identity');
+                        const data = await res.json();
+                        this.identity = data.identity;
+                        this.principal = data.principal;
+                    } catch (e) {
+                        console.error('Failed to load identity:', e);
+                    }
+                },
+
+                async loadIdentities() {
+                    try {
+                        const res = await fetch('/api/identities');
+                        const data = await res.json();
+                        this.identities = data.identities;
+                    } catch (e) {
+                        console.error('Failed to load identities:', e);
+                    }
+                },
+
+                async switchIdentity(name) {
+                    try {
+                        const res = await fetch('/api/identity/use', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name })
+                        });
+                        const data = await res.json();
+                        this.identity = name;
+                        this.principal = data.principal;
+                        await this.loadIdentities();
+                        await this.refreshBalances();
+                    } catch (e) {
+                        console.error('Failed to switch identity:', e);
+                    }
+                },
+
+                async refreshBalances() {
+                    try {
+                        const res = await fetch(`/api/balances?network=${this.network}`);
+                        const data = await res.json();
+                        this.balances = data.balances;
+                    } catch (e) {
+                        console.error('Failed to load balances:', e);
+                    }
+                },
+
+                async transfer() {
+                    this.loading = true;
+                    this.message = '';
+                    try {
+                        const res = await fetch('/api/transfer', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                token: this.selectedToken,
+                                recipient: this.recipient,
+                                amount: this.transferAmount,
+                                subaccount: this.toSubaccount,
+                                from_subaccount: this.fromSubaccount,
+                                memo: this.memo,
+                                network: this.network
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.ok) {
+                            this.message = `Sent ${data.amount} ${data.token} to ${data.to.slice(0, 10)}... (block ${data.block})`;
+                            this.messageType = 'success';
+                            this.recipient = '';
+                            this.transferAmount = '';
+                            await this.refreshBalances();
+                        } else {
+                            this.message = `Transfer failed: ${JSON.stringify(data.error || data)}`;
+                            this.messageType = 'error';
+                        }
+                    } catch (e) {
+                        this.message = `Error: ${e.message}`;
+                        this.messageType = 'error';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                tokenIcon(token) {
+                    const icons = { 'ckBTC': '₿', 'ckETH': 'Ξ', 'ICP': '∞', 'ckUSDC': '$', 'ckUSDT': '$' };
+                    return icons[token] || '●';
+                },
+
+                formatBalance(bal) {
+                    if (bal === undefined || bal === null) return '—';
+                    if (bal === 0) return '0';
+                    if (bal < 0.00001) return bal.toExponential(2);
+                    return bal.toLocaleString(undefined, { maximumFractionDigits: 8 });
+                },
+
+                getPrice(token) {
+                    const bal = this.balances.find(b => b.token.toLowerCase() === token.toLowerCase());
+                    return bal?.price || 0;
+                }
+            };
+        }
+    </script>
+</body>
+</html>
