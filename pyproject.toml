@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "internet-computer-wallet"
-version = "0.1.5"
-description = "CLI for ICRC-1 tokens (ckBTC, ckETH, ICP) on the Internet Computer"
+version = "0.2.0"
+description = "CLI for ICRC-1 tokens (ckBTC, ckETH, ICP, ckUSDC, ckUSDT) on the Internet Computer"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
@@ -30,6 +30,9 @@ Repository = "https://github.com/smart-social-contracts/icw"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["icw*"]
+
+[tool.setuptools.package-data]
+icw = ["static/*"]
 
 [tool.ruff]
 line-length = 120
