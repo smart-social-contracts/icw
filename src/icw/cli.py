@@ -133,6 +133,32 @@ def subaccount(s):
     return f'opt blob "{blob}"'
 
 
+def memo(s):
+    """Convert memo input to Candid blob format.
+
+    Accepts:
+    - None/empty: returns null
+    - Hex string (even length): direct bytes
+    - Arbitrary text: ASCII bytes (max 32 bytes)
+    """
+    if s is None or s == "":
+        return "null"
+
+    s = str(s)
+
+    # Hex string (even length, all hex chars) → direct bytes
+    if len(s) % 2 == 0 and len(s) <= 64 and all(c in "0123456789abcdefABCDEF" for c in s):
+        blob = "".join(f"\\{s[i:i+2]}" for i in range(0, len(s), 2))
+        return f'opt blob "{blob}"'
+
+    # Arbitrary text → ASCII bytes
+    raw = s.encode("ascii")
+    if len(raw) > 32:
+        raise ValueError(f"Memo too long: {len(raw)} bytes (max 32)")
+    blob = "".join(f"\\{b:02x}" for b in raw)
+    return f'opt blob "{blob}"'
+
+
 def cmd_balance(args):
     ledger, name, dec, _, cg_id = TOKENS[args.token]
     ledger = args.ledger or ledger  # allow override for testing
@@ -161,18 +187,22 @@ def cmd_transfer(args):
     ledger = args.ledger or ledger  # allow override for testing
     fee = args.fee if args.fee is not None else fee  # allow override for testing
     amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
+    memo_val = memo(args.memo) if hasattr(args, 'memo') else "null"
     r = dfx(
         [
             "canister",
             "call",
             ledger,
             "icrc1_transfer",
-            f'(record {{ to = record {{ owner = principal "{args.recipient}"; subaccount = {subaccount(args.subaccount)}; }}; amount = {amt}; fee = opt {fee}; memo = null; created_at_time = null; from_subaccount = {subaccount(args.from_subaccount)}; }})',
+            f'(record {{ to = record {{ owner = principal "{args.recipient}"; subaccount = {subaccount(args.subaccount)}; }}; amount = {amt}; fee = opt {fee}; memo = {memo_val}; created_at_time = null; from_subaccount = {subaccount(args.from_subaccount)}; }})',
         ],
         args.network,
     )
-    if isinstance(r, dict) and "Ok" in r:
-        output({"ok": True, "block": r["Ok"], "token": name, "amount": amt / 10**dec, "to": args.recipient})
+    result = {"ok": True, "block": r["Ok"], "token": name, "amount": amt / 10**dec, "to": args.recipient} if isinstance(r, dict) and "Ok" in r else None
+    if result and args.memo:
+        result["memo"] = args.memo
+    if result:
+        output(result)
     elif isinstance(r, dict) and "Err" in r:
         output({"ok": False, "error": r["Err"]})
     else:
@@ -215,6 +245,7 @@ def main():
     t.add_argument("--from-subaccount", "-f", default="0")
     t.add_argument("--ledger", "-l", help="Override ledger canister ID")
     t.add_argument("--fee", type=int, help="Override transfer fee")
+    t.add_argument("--memo", "-m", help="Transaction memo/tag (max 32 bytes)")
 
     sub.add_parser("info", aliases=["i"])
 

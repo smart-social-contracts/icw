@@ -28,6 +28,7 @@ icw balance -s 0a1b2c...          # hex (64 chars = 32 bytes)
 icw transfer <recipient> 0.001
 icw transfer <recipient> 0.001 -s 1 -f 2       # to subaccount 1, from subaccount 2
 icw transfer <recipient> 0.001 -s savings      # to "savings" subaccount
+icw transfer <recipient> 0.001 -m invoice_123  # with memo/tag
 
 # Token info + current price
 icw info                          # ckBTC (default)
@@ -64,6 +65,7 @@ All commands output JSON for easy parsing:
 - `-n, --network`: Network (ic, local). Default: ic
 - `--ledger`: Override ledger canister ID (for local testing)
 - `--fee`: Override transfer fee (for local testing)
+- `-m, --memo`: Transaction memo/tag (max 32 bytes, for tracking payments)
 
 ## Local Development
 
