@@ -21,8 +21,12 @@ icw = "icw.cli:main"
 [project.urls]
 Repository = "https://github.com/smart-social-contracts/icw"
 
+[tool.setuptools.package-dir]
+"" = "src"
+
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["icw*"]
 
 [tool.ruff]
 line-length = 120
