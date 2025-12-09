@@ -6,7 +6,6 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
@@ -66,9 +65,7 @@ async def list_identities():
         current = subprocess.run(
             ["dfx", "identity", "whoami"], capture_output=True, text=True, check=True
         ).stdout.strip()
-        r = subprocess.run(
-            ["dfx", "identity", "list"], capture_output=True, text=True, check=True
-        )
+        r = subprocess.run(["dfx", "identity", "list"], capture_output=True, text=True, check=True)
         ids = [
             {"name": line.strip(), "active": line.strip() == current}
             for line in r.stdout.strip().split("\n")
@@ -100,6 +97,7 @@ async def get_balance(token: str, network: str = "ic", subaccount: str = "0"):
     try:
         p = principal()
         from icw.cli import subaccount as sa_fn
+
         bal = int(
             dfx(
                 [

@@ -189,7 +189,7 @@ def cmd_transfer(args):
     ledger = args.ledger or ledger  # allow override for testing
     fee = args.fee if args.fee is not None else fee  # allow override for testing
     amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
-    memo_val = memo(args.memo) if hasattr(args, 'memo') else "null"
+    memo_val = memo(args.memo) if hasattr(args, "memo") else "null"
     r = dfx(
         [
             "canister",
@@ -200,7 +200,11 @@ def cmd_transfer(args):
         ],
         args.network,
     )
-    result = {"ok": True, "block": r["Ok"], "token": name, "amount": amt / 10**dec, "to": args.recipient} if isinstance(r, dict) and "Ok" in r else None
+    result = (
+        {"ok": True, "block": r["Ok"], "token": name, "amount": amt / 10**dec, "to": args.recipient}
+        if isinstance(r, dict) and "Ok" in r
+        else None
+    )
     if result and args.memo:
         result["memo"] = args.memo
     if result:
