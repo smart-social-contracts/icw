@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, "src")
 
-from icw.cli import TOKENS, subaccount
+from icw.cli import TOKENS, subaccount, memo
 
 
 def test_tokens():
@@ -24,6 +24,38 @@ def test_subaccount():
     print("✓ test_subaccount")
 
 
+def test_memo():
+    # Empty/null cases
+    assert memo(None) == "null"
+    assert memo("") == "null"
+    
+    # Text memo (ASCII bytes)
+    result = memo("invoice_123")
+    assert "opt blob" in result
+    assert "\\69" in result  # 'i' = 0x69
+    assert "\\6e" in result  # 'n' = 0x6e
+    
+    # Hex string (even length, all hex chars) -> direct bytes
+    hex_result = memo("0a1b2c3d")
+    assert "opt blob" in hex_result
+    assert "\\0a" in hex_result
+    assert "\\1b" in hex_result
+    
+    # Short text
+    short = memo("abc")
+    assert "opt blob" in short
+    assert "\\61" in short  # 'a' = 0x61
+    
+    # Test that memo too long raises error
+    try:
+        memo("a" * 33)  # 33 bytes, should fail
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "too long" in str(e)
+    
+    print("✓ test_memo")
+
+
 def test_token_structure():
     for name, (ledger, symbol, decimals, fee, cg_id) in TOKENS.items():
         assert ledger.endswith("-cai"), f"{name} ledger should end with -cai"
@@ -36,5 +68,6 @@ def test_token_structure():
 if __name__ == "__main__":
     test_tokens()
     test_subaccount()
+    test_memo()
     test_token_structure()
     print("\nAll tests passed!")
