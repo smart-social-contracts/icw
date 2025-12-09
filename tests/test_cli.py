@@ -32,31 +32,31 @@ def test_memo():
     # Empty/null cases
     assert memo(None) == "null"
     assert memo("") == "null"
-    
+
     # Text memo (ASCII bytes)
     result = memo("invoice_123")
     assert "opt blob" in result
     assert "\\69" in result  # 'i' = 0x69
     assert "\\6e" in result  # 'n' = 0x6e
-    
+
     # Hex string (even length, all hex chars) -> direct bytes
     hex_result = memo("0a1b2c3d")
     assert "opt blob" in hex_result
     assert "\\0a" in hex_result
     assert "\\1b" in hex_result
-    
+
     # Short text
     short = memo("abc")
     assert "opt blob" in short
     assert "\\61" in short  # 'a' = 0x61
-    
+
     # Test that memo too long raises error
     try:
         memo("a" * 33)  # 33 bytes, should fail
         assert False, "Should have raised ValueError"
     except ValueError as e:
         assert "too long" in str(e)
-    
+
     print("✓ test_memo")
 
 
