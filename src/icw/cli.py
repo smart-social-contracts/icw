@@ -14,6 +14,8 @@ TOKENS = {
     "ckbtc": ("mxzaz-hqaaa-aaaar-qaada-cai", "ckBTC", 8, 10, "bitcoin"),
     "cketh": ("ss2fx-dyaaa-aaaar-qacoq-cai", "ckETH", 18, 2000000000000, "ethereum"),
     "icp": ("ryjl3-tyaaa-aaaaa-aaaba-cai", "ICP", 8, 10000, "internet-computer"),
+    "ckusdc": ("xevnm-gaaaa-aaaar-qafnq-cai", "ckUSDC", 6, 10000, "usd-coin"),
+    "ckusdt": ("cngnf-vqaaa-aaaar-qag4q-cai", "ckUSDT", 6, 10000, "tether"),
 }
 
 
@@ -226,6 +228,15 @@ def cmd_info(args):
     )
 
 
+def cmd_ui(args):
+    """Launch the web UI."""
+    try:
+        from icw.api import run_server
+    except ImportError:
+        sys.exit("UI dependencies not installed. Run: pip install internet-computer-wallet[ui]")
+    run_server(port=args.port, open_browser=not args.no_browser)
+
+
 def main():
     p = argparse.ArgumentParser(prog="icw", description="ICP Wallet CLI")
     p.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
@@ -253,6 +264,10 @@ def main():
     i.add_argument("action", choices=["list", "use", "new", "whoami"], nargs="?", default="whoami")
     i.add_argument("name", nargs="?", help="Identity name (for use/new)")
 
+    u = sub.add_parser("ui", help="Launch web UI")
+    u.add_argument("--port", "-p", type=int, default=5555, help="Port to run on")
+    u.add_argument("--no-browser", action="store_true", help="Don't open browser")
+
     args = p.parse_args()
     {
         "balance": cmd_balance,
@@ -262,7 +277,17 @@ def main():
         "info": cmd_info,
         "i": cmd_info,
         "id": cmd_id,
+        "ui": cmd_ui,
     }[args.cmd](args)
+
+
+def ui():
+    """Launch the web UI."""
+    try:
+        from icw.api import run_server
+    except ImportError:
+        sys.exit("UI dependencies not installed. Run: pip install internet-computer-wallet[ui]")
+    run_server()
 
 
 if __name__ == "__main__":
