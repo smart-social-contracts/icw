@@ -1,8 +1,19 @@
 # ICW - ICP Wallet CLI
 
-Simple CLI for managing ICRC-1 tokens (ckBTC, ckETH, ICP) on the Internet Computer.
+Simple CLI and Web UI for managing ICRC-1 tokens on the Internet Computer.
+
+**Supported tokens:** ckBTC, ckETH, ICP, ckUSDC, ckUSDT
 
 > ⚠️ **WARNING**: This is experimental software. Do not use with significant amounts of funds. Use at your own risk.
+
+## Web UI
+
+![ICW Web UI](docs/screenshot.png)
+
+```bash
+pip install internet-computer-wallet[ui]
+icw ui
+```
 
 ## Install
 
@@ -44,12 +55,6 @@ icw id new <name>   # create new identity
 
 # Version
 icw --version
-
-# Web UI (optional)
-pip install internet-computer-wallet[ui]
-icw ui                            # Opens browser at http://localhost:5555
-icw ui --port 8080                # Custom port
-icw ui --no-browser               # Don't auto-open browser
 ```
 
 ## Output
