@@ -1,0 +1,106 @@
+name: Build AppImage
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[ui]"
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile \
+            --name icw \
+            --add-data "src/icw/static:icw/static" \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.protocols.http \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.protocols.websockets \
+            --hidden-import uvicorn.protocols.websockets.auto \
+            --hidden-import uvicorn.lifespan \
+            --hidden-import uvicorn.lifespan.on \
+            src/icw/cli.py
+
+      - name: Download AppImage tools
+        run: |
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+      - name: Create AppDir structure
+        run: |
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+
+          # Copy binary
+          cp dist/icw AppDir/usr/bin/
+
+          # Create desktop file
+          cat > AppDir/usr/share/applications/icw.desktop << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=ICW Wallet
+          Comment=ICP Wallet CLI for ICRC-1 tokens
+          Exec=icw
+          Icon=icw
+          Categories=Finance;Utility;
+          Terminal=true
+          EOF
+
+          # Create icon (simple SVG)
+          cat > AppDir/usr/share/icons/hicolor/256x256/apps/icw.svg << 'EOF'
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="45" fill="#1a1a1a"/>
+            <text x="50" y="65" font-size="40" fill="white" text-anchor="middle" font-family="sans-serif">₿</text>
+          </svg>
+          EOF
+
+          # Copy icon to root and as .DirIcon
+          cp AppDir/usr/share/icons/hicolor/256x256/apps/icw.svg AppDir/icw.svg
+          cp AppDir/usr/share/icons/hicolor/256x256/apps/icw.svg AppDir/.DirIcon
+
+          # Copy desktop file to root
+          cp AppDir/usr/share/applications/icw.desktop AppDir/
+
+          # Create AppRun
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          SELF=$(readlink -f "$0")
+          HERE=${SELF%/*}
+          export PATH="${HERE}/usr/bin:${PATH}"
+          exec "${HERE}/usr/bin/icw" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+      - name: Build AppImage
+        run: |
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage --appimage-extract-and-run AppDir ICW-x86_64.AppImage
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: ICW-AppImage
+          path: ICW-x86_64.AppImage
+
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ICW-x86_64.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
