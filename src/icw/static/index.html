@@ -259,12 +259,24 @@
                 priceInterval: null,
 
                 async init() {
+                    await this.loadConfig();
                     await this.loadIdentity();
                     await this.loadIdentities();
                     await this.refreshPrices();
                     await this.refreshBalances();
                     // Update prices every 30 seconds (matches server cache)
                     this.priceInterval = setInterval(() => this.refreshPrices(), 30000);
+                },
+
+                async loadConfig() {
+                    try {
+                        const res = await fetch('/api/config');
+                        const data = await res.json();
+                        this.network = data.network || 'ic';
+                        this.localLedgers = data.ledgers || {};
+                    } catch (e) {
+                        console.error('Failed to load config:', e);
+                    }
                 },
 
                 async loadIdentity() {

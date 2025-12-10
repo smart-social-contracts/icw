@@ -62,6 +62,67 @@ def output(data):
     print(json.dumps(data, indent=2))
 
 
+def detect_local_canisters():
+    """Auto-detect canister IDs from dfx.json or canister_ids.json in current directory."""
+    from pathlib import Path
+
+    canisters = {}
+    cwd = Path.cwd()
+
+    # Map of common canister names to token keys
+    name_map = {
+        "ckbtc_ledger": "ckbtc",
+        "ckbtc-ledger": "ckbtc",
+        "ckbtc": "ckbtc",
+        "cketh_ledger": "cketh",
+        "cketh-ledger": "cketh",
+        "cketh": "cketh",
+        "icp_ledger": "icp",
+        "icp-ledger": "icp",
+        "ledger": "icp",
+        "ckusdc_ledger": "ckusdc",
+        "ckusdc-ledger": "ckusdc",
+        "ckusdc": "ckusdc",
+        "ckusdt_ledger": "ckusdt",
+        "ckusdt-ledger": "ckusdt",
+        "ckusdt": "ckusdt",
+    }
+
+    # Try canister_ids.json first (for local network)
+    for filename in ["canister_ids.json", ".dfx/local/canister_ids.json"]:
+        path = cwd / filename
+        if path.exists():
+            try:
+                data = json.loads(path.read_text())
+                for name, info in data.items():
+                    token = name_map.get(name.lower())
+                    if token:
+                        # Handle both {"canister_id": ...} and {"local": "..."}
+                        if isinstance(info, dict):
+                            cid = info.get("local") or info.get("ic") or info.get("canister_id")
+                            if cid:
+                                canisters[token] = cid
+                        elif isinstance(info, str):
+                            canisters[token] = info
+            except Exception:
+                pass
+
+    # Try dfx.json for canister definitions
+    dfx_path = cwd / "dfx.json"
+    if dfx_path.exists():
+        try:
+            data = json.loads(dfx_path.read_text())
+            for name in data.get("canisters", {}):
+                token = name_map.get(name.lower())
+                if token and token not in canisters:
+                    # dfx.json doesn't have IDs, but we note the canister exists
+                    pass
+        except Exception:
+            pass
+
+    return canisters
+
+
 def ensure_dfx():
     """Check dfx is installed, offer to install if not."""
     if shutil.which("dfx"):
@@ -266,7 +327,31 @@ def cmd_ui(args):
         from icw.api import run_server
     except ImportError:
         sys.exit("UI dependencies not installed. Run: pip install internet-computer-wallet[ui]")
-    run_server(port=args.port, open_browser=not args.no_browser)
+
+    # Build ledger config from args and auto-detection
+    ledgers = detect_local_canisters() if args.network == "local" else {}
+
+    # Override with explicit flags
+    if hasattr(args, "ckbtc_ledger") and args.ckbtc_ledger:
+        ledgers["ckbtc"] = args.ckbtc_ledger
+    if hasattr(args, "cketh_ledger") and args.cketh_ledger:
+        ledgers["cketh"] = args.cketh_ledger
+    if hasattr(args, "icp_ledger") and args.icp_ledger:
+        ledgers["icp"] = args.icp_ledger
+    if hasattr(args, "ckusdc_ledger") and args.ckusdc_ledger:
+        ledgers["ckusdc"] = args.ckusdc_ledger
+    if hasattr(args, "ckusdt_ledger") and args.ckusdt_ledger:
+        ledgers["ckusdt"] = args.ckusdt_ledger
+
+    if ledgers:
+        print(f"Auto-detected ledgers: {json.dumps(ledgers, indent=2)}")
+
+    run_server(
+        port=args.port,
+        open_browser=not args.no_browser,
+        network=args.network,
+        ledgers=ledgers,
+    )
 
 
 def cmd_install_launcher(args):
@@ -354,6 +439,12 @@ def main():
     u = sub.add_parser("ui", help="Launch web UI")
     u.add_argument("--port", "-p", type=int, default=5555, help="Port to run on")
     u.add_argument("--no-browser", action="store_true", help="Don't open browser")
+    u.add_argument("--network", "-n", default="ic", help="Network (ic or local)")
+    u.add_argument("--ckbtc-ledger", help="ckBTC ledger canister ID (for local)")
+    u.add_argument("--cketh-ledger", help="ckETH ledger canister ID (for local)")
+    u.add_argument("--icp-ledger", help="ICP ledger canister ID (for local)")
+    u.add_argument("--ckusdc-ledger", help="ckUSDC ledger canister ID (for local)")
+    u.add_argument("--ckusdt-ledger", help="ckUSDT ledger canister ID (for local)")
 
     sub.add_parser("install-launcher", help="Install desktop launcher (Linux)")
 
