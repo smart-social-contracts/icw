@@ -225,6 +225,10 @@ async def get_info(token: str, network: str = "ic"):
 
     ledger, name, dec, fee, cg_id = TOKENS[token]
     price = get_usd_price(cg_id)
+    try:
+        user_principal = principal()
+    except Exception:
+        user_principal = None
     return {
         "token": name,
         "ledger": ledger,
@@ -232,7 +236,7 @@ async def get_info(token: str, network: str = "ic"):
         "fee": fee,
         "fee_human": fee / 10**dec,
         "price_usd": price,
-        "principal": principal(),
+        "principal": user_principal,
         "network": network,
     }
 
