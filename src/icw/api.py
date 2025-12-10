@@ -47,9 +47,9 @@ async def index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
-@app.get("/logo.svg")
+@app.get("/logo.png")
 async def logo():
-    return FileResponse(STATIC_DIR / "logo.svg", media_type="image/svg+xml")
+    return FileResponse(STATIC_DIR / "logo.png", media_type="image/png")
 
 
 @app.get("/api/prices")
