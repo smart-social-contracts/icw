@@ -144,7 +144,7 @@
                         <p class="text-2xl font-semibold text-gray-900" x-text="formatBalance(bal.balance)"></p>
                         <p class="text-sm text-gray-500">
                             <span x-show="prices[bal.token.toLowerCase()]" 
-                                  x-text="'$' + (bal.balance * (prices[bal.token.toLowerCase()] || 0)).toLocaleString(undefined, {maximumFractionDigits: 2})"></span>
+                                  x-text="formatUSD(bal.balance * (prices[bal.token.toLowerCase()] || 0))"></span>
                             <span x-show="!prices[bal.token.toLowerCase()]" class="text-gray-400">Price unavailable</span>
                         </p>
                     </div>
@@ -199,7 +199,7 @@
                             <span class="text-sm text-gray-400" x-text="selectedToken.toUpperCase()"></span>
                             <p class="text-xs text-green-600 font-medium" 
                                x-show="transferAmount && getPrice(selectedToken)"
-                               x-text="'≈ $' + (parseFloat(transferAmount || 0) * getPrice(selectedToken)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})">
+                               x-text="'≈ ' + formatUSD(parseFloat(transferAmount || 0) * getPrice(selectedToken))">
                             </p>
                         </div>
                     </div>
@@ -458,6 +458,12 @@
                     const minutes = Math.floor(seconds / 60);
                     if (minutes < 60) return minutes + 'm ago';
                     return date.toLocaleTimeString();
+                },
+
+                formatUSD(amount) {
+                    if (amount === null || amount === undefined || isNaN(amount)) return '$0.00';
+                    if (amount < 0.01 && amount > 0) return '<$0.01';
+                    return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 }
             };
         }
