@@ -241,6 +241,62 @@ def cmd_ui(args):
     run_server(port=args.port, open_browser=not args.no_browser)
 
 
+def cmd_install_launcher(args):
+    """Install desktop launcher (Linux only)."""
+    import os
+
+    if platform.system() != "Linux":
+        sys.exit("Desktop launcher is only supported on Linux")
+
+    home = os.path.expanduser("~")
+    apps_dir = os.path.join(home, ".local", "share", "applications")
+    icons_dir = os.path.join(home, ".local", "share", "icons", "hicolor", "256x256", "apps")
+
+    os.makedirs(apps_dir, exist_ok=True)
+    os.makedirs(icons_dir, exist_ok=True)
+
+    # Create icon
+    icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="48" fill="url(#bg)" stroke="#3b82f6" stroke-width="2"/>
+  <text x="50" y="42" font-size="24" fill="#f59e0b" text-anchor="middle" font-family="sans-serif" font-weight="bold">ICW</text>
+  <text x="50" y="68" font-size="28" fill="white" text-anchor="middle" font-family="sans-serif">₿ Ξ ∞</text>
+</svg>"""
+
+    icon_path = os.path.join(icons_dir, "icw.svg")
+    with open(icon_path, "w") as f:
+        f.write(icon_svg)
+
+    # Create .desktop file
+    desktop_entry = """[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ICW Wallet
+Comment=ICP Wallet for ICRC-1 tokens (ckBTC, ckETH, ICP, ckUSDC, ckUSDT)
+Exec=icw ui
+Icon=icw
+Categories=Finance;Utility;
+Terminal=false
+StartupNotify=true
+Keywords=crypto;wallet;bitcoin;ethereum;icp;
+"""
+
+    desktop_path = os.path.join(apps_dir, "icw.desktop")
+    with open(desktop_path, "w") as f:
+        f.write(desktop_entry)
+
+    # Update desktop database
+    subprocess.run(["update-desktop-database", apps_dir], capture_output=True)
+
+    output({"installed": True, "desktop_file": desktop_path, "icon": icon_path})
+    print('\n✓ Launcher installed! Search for "ICW Wallet" in your applications menu.')
+
+
 def main():
     p = argparse.ArgumentParser(prog="icw", description="ICP Wallet CLI")
     p.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
@@ -272,6 +328,8 @@ def main():
     u.add_argument("--port", "-p", type=int, default=5555, help="Port to run on")
     u.add_argument("--no-browser", action="store_true", help="Don't open browser")
 
+    sub.add_parser("install-launcher", help="Install desktop launcher (Linux)")
+
     args = p.parse_args()
     {
         "balance": cmd_balance,
@@ -282,6 +340,7 @@ def main():
         "i": cmd_info,
         "id": cmd_id,
         "ui": cmd_ui,
+        "install-launcher": cmd_install_launcher,
     }[args.cmd](args)
 
 
