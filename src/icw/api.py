@@ -237,8 +237,26 @@ async def get_info(token: str, network: str = "ic"):
     }
 
 
-def run_server(port: int = 5555, open_browser: bool = True):
+# Global config set by run_server
+_server_config = {"network": "ic", "ledgers": {}}
+
+
+@app.get("/api/config")
+async def get_config():
+    """Get server configuration (network, ledgers)."""
+    return _server_config
+
+
+def run_server(
+    port: int = 5555,
+    open_browser: bool = True,
+    network: str = "ic",
+    ledgers: dict = None,
+):
     """Start the web UI server."""
+    global _server_config
+    _server_config = {"network": network, "ledgers": ledgers or {}}
+
     if open_browser:
         webbrowser.open(f"http://localhost:{port}")
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
