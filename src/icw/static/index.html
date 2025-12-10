@@ -58,6 +58,38 @@
                x-text="principal || '...'"></p>
         </div>
 
+        <!-- Local network configuration -->
+        <div x-show="network === 'local'" x-cloak 
+             class="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6">
+            <div class="flex items-center gap-2 mb-4">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <h3 class="font-semibold text-amber-800">Local Network Configuration</h3>
+            </div>
+            <p class="text-sm text-amber-700 mb-4">Enter your local ledger canister IDs. Leave empty to use mainnet IDs.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <template x-for="t in ['ckbtc', 'cketh', 'icp', 'ckusdc', 'ckusdt']" :key="t">
+                    <div>
+                        <label class="block text-xs font-medium text-amber-700 mb-1" x-text="t.toUpperCase() + ' Ledger'"></label>
+                        <input type="text" x-model="localLedgers[t]" 
+                               :placeholder="'e.g. ' + t + '_ledger'"
+                               class="w-full px-3 py-2 text-xs rounded-lg border border-amber-200 bg-white focus:border-amber-400 focus:ring-0 font-mono">
+                    </div>
+                </template>
+            </div>
+            <div class="mt-3 flex gap-2">
+                <button @click="refreshBalances()" 
+                        class="px-4 py-2 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition">
+                    Refresh Balances
+                </button>
+                <button @click="localLedgers = {}" 
+                        class="px-4 py-2 text-xs bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition">
+                    Clear All
+                </button>
+            </div>
+        </div>
+
         <!-- Balance cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
             <template x-for="bal in balances" :key="bal.token">
@@ -197,6 +229,7 @@
                 loading: false,
                 message: '',
                 messageType: 'success',
+                localLedgers: {},  // Custom ledger IDs for local network
 
                 async init() {
                     await this.loadIdentity();
@@ -244,7 +277,11 @@
 
                 async refreshBalances() {
                     try {
-                        const res = await fetch(`/api/balances?network=${this.network}`);
+                        let url = `/api/balances?network=${this.network}`;
+                        if (this.network === 'local' && Object.keys(this.localLedgers).length > 0) {
+                            url += `&ledgers=${encodeURIComponent(JSON.stringify(this.localLedgers))}`;
+                        }
+                        const res = await fetch(url);
                         const data = await res.json();
                         this.balances = data.balances;
                     } catch (e) {
@@ -256,18 +293,24 @@
                     this.loading = true;
                     this.message = '';
                     try {
+                        const payload = {
+                            token: this.selectedToken,
+                            recipient: this.recipient,
+                            amount: this.transferAmount,
+                            subaccount: this.toSubaccount,
+                            from_subaccount: this.fromSubaccount,
+                            memo: this.memo,
+                            network: this.network
+                        };
+                        // Add custom ledger for local network
+                        if (this.network === 'local' && this.localLedgers[this.selectedToken]) {
+                            payload.ledger = this.localLedgers[this.selectedToken];
+                            payload.fee = 0;  // Local ledgers typically have 0 fee
+                        }
                         const res = await fetch('/api/transfer', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                token: this.selectedToken,
-                                recipient: this.recipient,
-                                amount: this.transferAmount,
-                                subaccount: this.toSubaccount,
-                                from_subaccount: this.fromSubaccount,
-                                memo: this.memo,
-                                network: this.network
-                            })
+                            body: JSON.stringify(payload)
                         });
                         const data = await res.json();
                         if (data.ok) {
