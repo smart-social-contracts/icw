@@ -261,7 +261,7 @@
                             <span class="text-xl" x-text="tokenIcon(tx.token)"></span>
                             <div>
                                 <p class="font-medium text-gray-900">
-                                    <span x-text="'-' + tx.amount + ' ' + tx.token"></span>
+                                    <span x-text="'-' + formatAmount(tx.amount) + ' ' + tx.token"></span>
                                 </p>
                                 <p class="text-xs text-gray-500">
                                     To: <span class="font-mono" x-text="tx.to.slice(0, 15) + '...'"></span>
@@ -519,7 +519,7 @@
                         });
                         const data = await res.json();
                         if (data.ok) {
-                            this.message = `Sent ${data.amount} ${data.token} to ${data.to.slice(0, 10)}... (block ${data.block})`;
+                            this.message = `Sent ${this.formatAmount(data.amount)} ${data.token} to ${data.to.slice(0, 10)}... (block ${data.block})`;
                             this.messageType = 'success';
                             // Add to transactions list
                             this.transactions.unshift({
@@ -558,6 +558,15 @@
                     if (bal === 0) return '0';
                     if (bal < 0.00001) return bal.toExponential(2);
                     return bal.toLocaleString(undefined, { maximumFractionDigits: 8 });
+                },
+
+                formatAmount(amount) {
+                    // Format amount without scientific notation
+                    if (amount === undefined || amount === null) return '0';
+                    const num = parseFloat(amount);
+                    if (num === 0) return '0';
+                    // Use fixed notation with up to 8 decimals, trim trailing zeros
+                    return num.toFixed(8).replace(/\.?0+$/, '');
                 },
 
                 getPrice(token) {
