@@ -3,6 +3,8 @@
 import subprocess
 import time
 import sys
+import urllib.request
+import urllib.error
 
 sys.path.insert(0, "src")
 
@@ -13,8 +15,27 @@ except ImportError:
     print("Playwright not installed. Run: pip install playwright && playwright install chromium")
     sys.exit(1)
 
+# Server configuration
 SERVER_PORT = 5556
 SERVER_URL = f"http://localhost:{SERVER_PORT}"
+
+# Timeout constants (in milliseconds)
+TIMEOUT_BALANCES_LOAD = 3000  # Wait for balances to load from API
+TIMEOUT_IDENTITY_LOAD = 2000  # Wait for identity to load
+TIMEOUT_ANIMATION = 500  # Wait for UI animations
+TIMEOUT_COLLAPSE = 300  # Wait for collapse animation
+
+
+def wait_for_server(url, timeout=10):
+    """Poll server until it responds or timeout."""
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            urllib.request.urlopen(url, timeout=1)
+            return True
+        except (urllib.error.URLError, ConnectionRefusedError):
+            time.sleep(0.2)
+    return False
 
 
 def start_server():
@@ -24,7 +45,9 @@ def start_server():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    time.sleep(2)  # Wait for server to start
+    if not wait_for_server(SERVER_URL):
+        proc.terminate()
+        raise RuntimeError("Server failed to start within timeout")
     return proc
 
 
@@ -56,7 +79,7 @@ def test_balance_cards_visible():
         page.wait_for_load_state("networkidle")
 
         # Wait for balances to load
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(TIMEOUT_BALANCES_LOAD)
 
         # Check that token cards exist
         cards = page.locator("text=ckBTC")
@@ -111,13 +134,13 @@ def test_identity_dropdown():
         page.wait_for_load_state("networkidle")
 
         # Wait for identity to load
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(TIMEOUT_IDENTITY_LOAD)
 
         # Click identity button (has green dot indicator)
         identity_btn = page.locator("button").filter(has=page.locator(".bg-green-500")).first
         if identity_btn.is_visible():
             identity_btn.click()
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(TIMEOUT_ANIMATION)
 
         browser.close()
     print("✓ test_identity_dropdown")
@@ -133,7 +156,7 @@ def test_advanced_options_toggle():
 
         # Click advanced options
         page.locator("text=Advanced options").click()
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(TIMEOUT_COLLAPSE)
 
         # Subaccount fields should be visible (in the form, not modal)
         assert page.locator("form label:has-text('To Subaccount')").is_visible()
@@ -174,7 +197,7 @@ def test_principal_displayed():
         page.wait_for_load_state("networkidle")
 
         # Wait for principal to load
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(TIMEOUT_IDENTITY_LOAD)
 
         # Principal should be in a monospace font element
         principal_elem = page.locator(".font-mono")
@@ -229,7 +252,7 @@ def test_price_timestamp():
         page.wait_for_load_state("networkidle")
 
         # Wait for prices to load
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(TIMEOUT_BALANCES_LOAD)
 
         # Check for price timestamp text (may say "just now" or "Xs ago")
         # May not always be visible if prices haven't loaded
