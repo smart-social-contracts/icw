@@ -47,6 +47,11 @@ async def index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/logo.svg")
+async def logo():
+    return FileResponse(STATIC_DIR / "logo.svg", media_type="image/svg+xml")
+
+
 @app.get("/api/prices")
 async def get_prices():
     """Get all token prices in USD."""
