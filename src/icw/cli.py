@@ -286,8 +286,8 @@ def cmd_install_launcher(args):
     os.makedirs(icons_dir, exist_ok=True)
 
     # Copy logo from package
-    logo_src = Path(__file__).parent / "static" / "logo.svg"
-    icon_path = os.path.join(icons_dir, "icw.svg")
+    logo_src = Path(__file__).parent / "static" / "logo.png"
+    icon_path = os.path.join(icons_dir, "icw.png")
     if logo_src.exists():
         sh.copy(logo_src, icon_path)
     else:
