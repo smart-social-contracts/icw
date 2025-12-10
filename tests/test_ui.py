@@ -96,7 +96,7 @@ def test_transfer_form_exists():
         # Check form elements
         assert page.locator("input[placeholder*='xxxxx']").is_visible()  # Recipient
         assert page.locator("input[placeholder='0.00']").is_visible()  # Amount
-        assert page.locator("button:has-text('Send')").is_visible()  # Submit
+        assert page.locator("button[type='submit']").is_visible()  # Submit
 
         browser.close()
     print("✓ test_transfer_form_exists")
