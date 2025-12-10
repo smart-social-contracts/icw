@@ -100,6 +100,40 @@ def test_api_transfer_invalid_token():
     print("✓ test_api_transfer_invalid_token")
 
 
+def test_api_prices():
+    """Prices endpoint should return token prices."""
+    response = client.get("/api/prices")
+    assert response.status_code == 200
+    data = response.json()
+    assert "prices" in data
+    assert "timestamp" in data
+    # Check all tokens are present
+    for token in ["ckbtc", "cketh", "icp", "ckusdc", "ckusdt"]:
+        assert token in data["prices"]
+        assert "name" in data["prices"][token]
+        assert "coingecko_id" in data["prices"][token]
+    print("✓ test_api_prices")
+
+
+def test_api_config():
+    """Config endpoint should return server configuration."""
+    response = client.get("/api/config")
+    assert response.status_code == 200
+    data = response.json()
+    assert "network" in data
+    assert "ledgers" in data
+    assert isinstance(data["ledgers"], dict)
+    print("✓ test_api_config")
+
+
+def test_api_logo():
+    """Logo endpoint should return image."""
+    response = client.get("/logo.png")
+    assert response.status_code == 200
+    assert "image/png" in response.headers["content-type"]
+    print("✓ test_api_logo")
+
+
 if __name__ == "__main__":
     test_index_returns_html()
     test_api_identity()
@@ -109,4 +143,7 @@ if __name__ == "__main__":
     test_api_info_all_tokens()
     test_api_transfer_missing_fields()
     test_api_transfer_invalid_token()
+    test_api_prices()
+    test_api_config()
+    test_api_logo()
     print("\nAll API tests passed!")
