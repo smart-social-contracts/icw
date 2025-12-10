@@ -173,6 +173,9 @@ async def get_all_balances(network: str = "ic", ledgers: str = ""):
     for token in TOKENS:
         try:
             custom_ledger = ledger_map.get(token, "")
+            # Skip tokens without custom ledgers on local network
+            if network == "local" and not custom_ledger:
+                continue
             bal = await get_balance(token, network, "0", custom_ledger)
             balances.append(bal)
         except Exception:
