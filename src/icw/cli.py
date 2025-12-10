@@ -272,6 +272,8 @@ def cmd_ui(args):
 def cmd_install_launcher(args):
     """Install desktop launcher (Linux only)."""
     import os
+    import shutil as sh
+    from pathlib import Path
 
     if platform.system() != "Linux":
         sys.exit("Desktop launcher is only supported on Linux")
@@ -283,22 +285,19 @@ def cmd_install_launcher(args):
     os.makedirs(apps_dir, exist_ok=True)
     os.makedirs(icons_dir, exist_ok=True)
 
-    # Create icon
-    icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a1a2e"/>
-      <stop offset="100%" style="stop-color:#16213e"/>
-    </linearGradient>
-  </defs>
-  <circle cx="50" cy="50" r="48" fill="url(#bg)" stroke="#3b82f6" stroke-width="2"/>
-  <text x="50" y="42" font-size="24" fill="#f59e0b" text-anchor="middle" font-family="sans-serif" font-weight="bold">ICW</text>
-  <text x="50" y="68" font-size="28" fill="white" text-anchor="middle" font-family="sans-serif">₿ Ξ ∞</text>
-</svg>"""
-
+    # Copy logo from package
+    logo_src = Path(__file__).parent / "static" / "logo.svg"
     icon_path = os.path.join(icons_dir, "icw.svg")
-    with open(icon_path, "w") as f:
-        f.write(icon_svg)
+    if logo_src.exists():
+        sh.copy(logo_src, icon_path)
+    else:
+        # Fallback: create simple icon if logo not found
+        icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="48" fill="#1a1a2e" stroke="#3b82f6" stroke-width="2"/>
+  <text x="50" y="60" font-size="32" fill="white" text-anchor="middle" font-family="sans-serif" font-weight="bold">ICW</text>
+</svg>"""
+        with open(icon_path, "w") as f:
+            f.write(icon_svg)
 
     # Create .desktop file
     desktop_entry = """[Desktop Entry]
