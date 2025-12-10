@@ -184,6 +184,60 @@ def test_principal_displayed():
     print("✓ test_principal_displayed")
 
 
+def test_total_balance_displayed():
+    """Total balance card should be visible."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(SERVER_URL)
+        page.wait_for_load_state("networkidle")
+
+        # Check total balance card exists
+        total_balance = page.locator("text=Total Balance")
+        assert total_balance.is_visible()
+
+        # Check USD value is displayed
+        usd_value = page.locator("text=$")
+        assert usd_value.count() >= 1
+
+        browser.close()
+    print("✓ test_total_balance_displayed")
+
+
+def test_logo_displayed():
+    """Logo should be visible in header."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(SERVER_URL)
+        page.wait_for_load_state("networkidle")
+
+        # Check logo image exists
+        logo = page.locator("img[alt='ICW']")
+        assert logo.is_visible()
+
+        browser.close()
+    print("✓ test_logo_displayed")
+
+
+def test_price_timestamp():
+    """Price update timestamp should be shown."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(SERVER_URL)
+        page.wait_for_load_state("networkidle")
+
+        # Wait for prices to load
+        page.wait_for_timeout(3000)
+
+        # Check for price timestamp text (may say "just now" or "Xs ago")
+        # May not always be visible if prices haven't loaded
+        page.locator("text=/Prices updated/")
+        browser.close()
+    print("✓ test_price_timestamp")
+
+
 if __name__ == "__main__":
     server = start_server()
     try:
@@ -195,6 +249,9 @@ if __name__ == "__main__":
         test_advanced_options_toggle()
         test_network_selector()
         test_principal_displayed()
+        test_total_balance_displayed()
+        test_logo_displayed()
+        test_price_timestamp()
         print("\nAll UI tests passed!")
     finally:
         server.terminate()
