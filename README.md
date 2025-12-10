@@ -12,7 +12,15 @@ Simple CLI and Web UI for managing ICRC-1 tokens on the Internet Computer.
 
 ```bash
 pip install internet-computer-wallet[ui]
-icw ui
+icw ui                    # Opens browser at http://localhost:5555
+icw ui --port 8080        # Custom port
+icw ui --no-browser       # Don't auto-open browser
+```
+
+### Desktop Launcher (Linux)
+
+```bash
+icw install-launcher      # Adds "ICW Wallet" to your applications menu
 ```
 
 ## Install
