@@ -135,10 +135,10 @@ def test_advanced_options_toggle():
         page.locator("text=Advanced options").click()
         page.wait_for_timeout(300)
 
-        # Subaccount fields should be visible
-        assert page.locator("text=To Subaccount").is_visible()
-        assert page.locator("text=From Subaccount").is_visible()
-        assert page.locator("text=Memo").is_visible()
+        # Subaccount fields should be visible (in the form, not modal)
+        assert page.locator("form label:has-text('To Subaccount')").is_visible()
+        assert page.locator("form label:has-text('From Subaccount')").is_visible()
+        assert page.locator("form label:has-text('Memo')").is_visible()
 
         browser.close()
     print("✓ test_advanced_options_toggle")
