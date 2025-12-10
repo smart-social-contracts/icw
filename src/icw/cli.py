@@ -105,6 +105,7 @@ def detect_local_canisters():
                         elif isinstance(info, str):
                             canisters[token] = info
             except Exception:
+                # Ignore errors reading/parsing canister_ids.json; file may be malformed
                 pass
 
     # Try dfx.json for canister definitions
@@ -118,6 +119,7 @@ def detect_local_canisters():
                     # dfx.json doesn't have IDs, but we note the canister exists
                     pass
         except Exception:
+            # Ignore errors reading/parsing dfx.json; canister detection is best-effort
             pass
 
     return canisters
@@ -237,8 +239,8 @@ def memo(s):
 
     s = str(s)
 
-    # Hex string (even length, all hex chars) → direct bytes
-    if len(s) % 2 == 0 and len(s) <= 64 and all(c in "0123456789abcdefABCDEF" for c in s):
+    # Hex string (non-empty, even length, all hex chars) → direct bytes
+    if len(s) > 0 and len(s) % 2 == 0 and len(s) <= 64 and all(c in "0123456789abcdefABCDEF" for c in s):
         blob = "".join(f"\\{s[i:i+2]}" for i in range(0, len(s), 2))
         return f'opt blob "{blob}"'
 

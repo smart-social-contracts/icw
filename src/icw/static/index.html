@@ -509,7 +509,8 @@
                         // Add custom ledger for local network
                         if (this.network === 'local' && this.localLedgers[this.selectedToken]) {
                             payload.ledger = this.localLedgers[this.selectedToken];
-                            payload.fee = 0;  // Local ledgers typically have 0 fee
+                            // Default to 0 fee for local; server will use ledger's actual fee if not specified
+                            payload.fee = 0;
                         }
                         const res = await fetch('/api/transfer', {
                             method: 'POST',

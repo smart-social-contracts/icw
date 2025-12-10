@@ -166,6 +166,7 @@ async def get_all_balances(network: str = "ic", ledgers: str = ""):
         try:
             ledger_map = json_lib.loads(ledgers)
         except Exception:
+            # Ignore malformed JSON; use empty ledger map
             pass
 
     balances = []
