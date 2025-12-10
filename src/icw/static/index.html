@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ICW Wallet</title>
+    <link rel="icon" type="image/png" href="/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
@@ -296,6 +297,14 @@
                     <div class="flex justify-between py-2 border-b border-gray-100">
                         <span class="text-gray-500">Network</span>
                         <span x-text="network === 'ic' ? 'Mainnet' : 'Local'"></span>
+                    </div>
+                    <div x-show="fromSubaccount && fromSubaccount !== '0'" class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-500">From Subaccount</span>
+                        <span class="font-mono text-xs" x-text="fromSubaccount"></span>
+                    </div>
+                    <div x-show="toSubaccount && toSubaccount !== '0'" class="flex justify-between py-2 border-b border-gray-100">
+                        <span class="text-gray-500">To Subaccount</span>
+                        <span class="font-mono text-xs" x-text="toSubaccount"></span>
                     </div>
                     <div x-show="memo" class="flex justify-between py-2 border-b border-gray-100">
                         <span class="text-gray-500">Memo</span>

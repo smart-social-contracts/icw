@@ -52,6 +52,11 @@ async def logo():
     return FileResponse(STATIC_DIR / "logo.png", media_type="image/png")
 
 
+@app.get("/favicon.ico")
+async def favicon():
+    return FileResponse(STATIC_DIR / "logo.png", media_type="image/png")
+
+
 @app.get("/api/prices")
 async def get_prices():
     """Get all token prices in USD."""
