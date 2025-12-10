@@ -30,17 +30,31 @@ def get_usd_price(coingecko_id):
         return None
 
 
+_price_cache = {"data": {}, "timestamp": 0}
+
+
 def get_all_prices():
-    """Fetch all token prices in a single API call."""
+    """Fetch all token prices in a single API call (cached for 30 seconds)."""
+    import time
+
+    now = time.time()
+    # Return cached data if less than 30 seconds old
+    if _price_cache["data"] and (now - _price_cache["timestamp"]) < 30:
+        return _price_cache["data"]
+
     try:
         ids = ",".join(t[4] for t in TOKENS.values())  # coingecko IDs
         url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd"
         req = urllib.request.Request(url, headers={"User-Agent": "ICW/1.0"})
         with urllib.request.urlopen(req, timeout=10) as r:
             data = json.loads(r.read())
-            return {cg_id: data.get(cg_id, {}).get("usd") for cg_id in data}
+            result = {cg_id: data.get(cg_id, {}).get("usd") for cg_id in data}
+            _price_cache["data"] = result
+            _price_cache["timestamp"] = now
+            return result
     except Exception:
-        return {}
+        # Return stale cache if available
+        return _price_cache["data"] or {}
 
 
 def output(data):
