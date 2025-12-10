@@ -299,14 +299,14 @@ def cmd_install_launcher(args):
         with open(icon_path, "w") as f:
             f.write(icon_svg)
 
-    # Create .desktop file
-    desktop_entry = """[Desktop Entry]
+    # Create .desktop file (use full path to icon for PNG)
+    desktop_entry = f"""[Desktop Entry]
 Version=1.0
 Type=Application
 Name=ICW Wallet
 Comment=ICP Wallet for ICRC-1 tokens (ckBTC, ckETH, ICP, ckUSDC, ckUSDT)
 Exec=icw ui
-Icon=icw
+Icon={icon_path}
 Categories=Finance;Utility;
 Terminal=false
 StartupNotify=true
