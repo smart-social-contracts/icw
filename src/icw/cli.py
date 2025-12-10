@@ -23,10 +23,24 @@ def get_usd_price(coingecko_id):
     """Fetch USD price from CoinGecko (free, no API key)."""
     try:
         url = f"https://api.coingecko.com/api/v3/simple/price?ids={coingecko_id}&vs_currencies=usd"
-        with urllib.request.urlopen(url, timeout=5) as r:
+        req = urllib.request.Request(url, headers={"User-Agent": "ICW/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
             return json.loads(r.read()).get(coingecko_id, {}).get("usd")
     except Exception:
         return None
+
+
+def get_all_prices():
+    """Fetch all token prices in a single API call."""
+    try:
+        ids = ",".join(t[4] for t in TOKENS.values())  # coingecko IDs
+        url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd"
+        req = urllib.request.Request(url, headers={"User-Agent": "ICW/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read())
+            return {cg_id: data.get(cg_id, {}).get("usd") for cg_id in data}
+    except Exception:
+        return {}
 
 
 def output(data):

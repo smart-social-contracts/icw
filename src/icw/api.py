@@ -14,6 +14,7 @@ from icw.cli import (
     TOKENS,
     dfx,
     ensure_dfx,
+    get_all_prices,
     get_usd_price,
     memo,
     principal,
@@ -44,6 +45,17 @@ class IdentityRequest(BaseModel):
 @app.get("/")
 async def index():
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/api/prices")
+async def get_prices():
+    """Get all token prices in USD."""
+    prices = get_all_prices()
+    # Map coingecko IDs back to token names
+    result = {}
+    for token, (_, name, _, _, cg_id) in TOKENS.items():
+        result[token] = {"name": name, "price": prices.get(cg_id), "coingecko_id": cg_id}
+    return {"prices": result, "timestamp": __import__("time").time()}
 
 
 @app.get("/api/identity")
