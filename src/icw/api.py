@@ -3,6 +3,7 @@
 import subprocess
 import webbrowser
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -32,6 +33,8 @@ class TransferRequest(BaseModel):
     from_subaccount: str = "0"
     memo: str = ""
     network: str = "ic"
+    ledger: str = ""  # Custom ledger canister ID (for local testing)
+    fee: Optional[int] = None  # Custom fee (for local testing)
 
 
 class IdentityRequest(BaseModel):
@@ -88,12 +91,13 @@ async def use_identity(req: IdentityRequest):
 
 
 @app.get("/api/balance/{token}")
-async def get_balance(token: str, network: str = "ic", subaccount: str = "0"):
+async def get_balance(token: str, network: str = "ic", subaccount: str = "0", ledger: str = ""):
     """Get token balance with USD value."""
     if token not in TOKENS:
         raise HTTPException(status_code=400, detail=f"Unknown token: {token}")
 
-    ledger, name, dec, _, cg_id = TOKENS[token]
+    default_ledger, name, dec, _, cg_id = TOKENS[token]
+    ledger_id = ledger if ledger else default_ledger
     try:
         p = principal()
         from icw.cli import subaccount as sa_fn
@@ -103,7 +107,7 @@ async def get_balance(token: str, network: str = "ic", subaccount: str = "0"):
                 [
                     "canister",
                     "call",
-                    ledger,
+                    ledger_id,
                     "icrc1_balance_of",
                     f'(record {{ owner = principal "{p}"; subaccount = {sa_fn(subaccount)}; }})',
                 ],
@@ -112,7 +116,7 @@ async def get_balance(token: str, network: str = "ic", subaccount: str = "0"):
             or 0
         )
         human = bal / 10**dec
-        price = get_usd_price(cg_id)
+        price = get_usd_price(cg_id) if network == "ic" else None
         usd = round(human * price, 2) if price else None
         return {
             "token": name,
@@ -121,21 +125,35 @@ async def get_balance(token: str, network: str = "ic", subaccount: str = "0"):
             "usd": usd,
             "price": price,
             "principal": p,
+            "ledger": ledger_id,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/balances")
-async def get_all_balances(network: str = "ic"):
-    """Get all token balances."""
+async def get_all_balances(network: str = "ic", ledgers: str = ""):
+    """Get all token balances.
+
+    ledgers: JSON-encoded dict of token -> ledger_id mappings (for local testing)
+    """
+    import json as json_lib
+
+    ledger_map = {}
+    if ledgers:
+        try:
+            ledger_map = json_lib.loads(ledgers)
+        except Exception:
+            pass
+
     balances = []
     for token in TOKENS:
         try:
-            bal = await get_balance(token, network)
+            custom_ledger = ledger_map.get(token, "")
+            bal = await get_balance(token, network, "0", custom_ledger)
             balances.append(bal)
         except Exception:
-            balances.append({"token": token, "error": True})
+            balances.append({"token": TOKENS[token][1], "balance": 0, "error": True})
     return {"balances": balances}
 
 
@@ -145,7 +163,9 @@ async def transfer(req: TransferRequest):
     if req.token not in TOKENS:
         raise HTTPException(status_code=400, detail=f"Unknown token: {req.token}")
 
-    ledger, name, dec, fee, _ = TOKENS[req.token]
+    default_ledger, name, dec, default_fee, _ = TOKENS[req.token]
+    ledger_id = req.ledger if req.ledger else default_ledger
+    fee = req.fee if req.fee is not None else default_fee
     try:
         amt = int(float(req.amount) * 10**dec) if "." in req.amount else int(req.amount)
         memo_val = memo(req.memo) if req.memo else "null"
@@ -154,7 +174,7 @@ async def transfer(req: TransferRequest):
             [
                 "canister",
                 "call",
-                ledger,
+                ledger_id,
                 "icrc1_transfer",
                 f'(record {{ to = record {{ owner = principal "{req.recipient}"; subaccount = {subaccount(req.subaccount)}; }}; amount = {amt}; fee = opt {fee}; memo = {memo_val}; created_at_time = null; from_subaccount = {subaccount(req.from_subaccount)}; }})',
             ],
