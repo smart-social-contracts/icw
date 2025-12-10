@@ -245,10 +245,38 @@ async def get_info(token: str, network: str = "ic"):
 _server_config = {"network": "ic", "ledgers": {}}
 
 
+def get_version_info():
+    """Get version, git commit, and build date."""
+    import subprocess
+    from icw import __version__
+
+    try:
+        commit = (
+            subprocess.run(
+                ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=STATIC_DIR.parent
+            ).stdout.strip()
+            or "unknown"
+        )
+    except Exception:
+        commit = "unknown"
+
+    try:
+        date = (
+            subprocess.run(
+                ["git", "log", "-1", "--format=%ci"], capture_output=True, text=True, cwd=STATIC_DIR.parent
+            ).stdout.strip()
+            or "unknown"
+        )
+    except Exception:
+        date = "unknown"
+
+    return {"version": __version__, "commit": commit, "date": date}
+
+
 @app.get("/api/config")
 async def get_config():
-    """Get server configuration (network, ledgers)."""
-    return _server_config
+    """Get server configuration (network, ledgers, version)."""
+    return {**_server_config, **get_version_info()}
 
 
 def run_server(
