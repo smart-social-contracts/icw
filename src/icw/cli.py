@@ -254,7 +254,12 @@ def memo(s):
 
 def cmd_balance(args):
     ledger, name, dec, _, cg_id = TOKENS[args.token]
-    ledger = args.ledger or ledger  # allow override for testing
+    # Auto-detect local ledgers if on local network
+    if args.network == "local" and not args.ledger:
+        local_ledgers = detect_local_canisters()
+        ledger = local_ledgers.get(args.token) or ledger
+    else:
+        ledger = args.ledger or ledger  # allow override for testing
     p = args.principal or principal()
     bal = int(
         dfx(
@@ -277,7 +282,12 @@ def cmd_balance(args):
 
 def cmd_transfer(args):
     ledger, name, dec, fee, cg_id = TOKENS[args.token]
-    ledger = args.ledger or ledger  # allow override for testing
+    # Auto-detect local ledgers if on local network
+    if args.network == "local" and not args.ledger:
+        local_ledgers = detect_local_canisters()
+        ledger = local_ledgers.get(args.token) or ledger
+    else:
+        ledger = args.ledger or ledger  # allow override for testing
     fee = args.fee if args.fee is not None else fee  # allow override for testing
     amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
     memo_val = memo(args.memo) if hasattr(args, "memo") else "null"
