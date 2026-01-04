@@ -17,6 +17,23 @@ icw ui --port 8080        # Custom port
 icw ui --no-browser       # Don't auto-open browser
 ```
 
+### Explorer
+
+![ICW Explorer](docs/screenshot2.png)
+
+Browse transaction history and balances for any account at `/explorer`.
+
+```
+http://localhost:5555/explorer                      # Your account
+http://localhost:5555/explorer?account=<principal>  # Any account
+```
+
+**Features:**
+- Look up balances for any principal across all supported tokens
+- View transaction history (transfers, mints, burns) with timestamps
+- Click any token balance to view its transactions
+- Supports local network with custom ledger/index canister configuration
+
 ### Desktop Launcher (Linux)
 
 ```bash
