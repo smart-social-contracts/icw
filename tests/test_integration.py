@@ -111,68 +111,86 @@ def test_transfer_with_balance_verification():
     print("\n=== Test: transfer with balance verification ===")
     local_ledger = run(["dfx", "canister", "id", "ckbtc_ledger"])
     principal = get_principal()
-    
+
     # First, fund subaccount 1 from minting account (default) so we have a non-minting sender
     print("Funding subaccount 1 from minting account...")
     result = icw("-n", "local", "transfer", principal, "0.1", "-s", "1", "-l", local_ledger, "--fee", "0")
     assert result.returncode == 0, f"Failed to fund subaccount 1: {result.stderr}"
-    
+
     # Get sender's initial balance (subaccount 1 - NOT the minting account)
     result = icw("-n", "local", "balance", "-s", "1", "-l", local_ledger)
     assert result.returncode == 0, f"Failed to get sender balance: {result.stderr}"
     sender_before = json.loads(result.stdout)
     sender_balance_before = sender_before["raw"]
     print(f"Sender (subaccount 1) balance before: {sender_before['balance']} ckBTC (raw: {sender_balance_before})")
-    
+
     # Get receiver's initial balance (subaccount 2)
     result = icw("-n", "local", "balance", "-s", "2", "-l", local_ledger)
     assert result.returncode == 0, f"Failed to get receiver balance: {result.stderr}"
     receiver_before = json.loads(result.stdout)
     receiver_balance_before = receiver_before["raw"]
-    print(f"Receiver (subaccount 2) balance before: {receiver_before['balance']} ckBTC (raw: {receiver_balance_before})")
-    
+    print(
+        f"Receiver (subaccount 2) balance before: {receiver_before['balance']} ckBTC (raw: {receiver_balance_before})"
+    )
+
     # Transfer amount (in raw units: 0.01 ckBTC = 1,000,000 satoshis)
     transfer_amount_btc = 0.01
     transfer_amount_raw = 1_000_000
     fee_raw = 10  # non-minting account transfers require actual fee
-    
+
     # Perform transfer from subaccount 1 to subaccount 2
-    result = icw("-n", "local", "transfer", principal, str(transfer_amount_btc), "-s", "2", "-f", "1", "-l", local_ledger, "--fee", "10")
+    result = icw(
+        "-n",
+        "local",
+        "transfer",
+        principal,
+        str(transfer_amount_btc),
+        "-s",
+        "2",
+        "-f",
+        "1",
+        "-l",
+        local_ledger,
+        "--fee",
+        "10",
+    )
     print(f"Transfer result: {result.stdout}")
     assert result.returncode == 0, f"Transfer failed: {result.stderr}"
-    
+
     transfer_data = json.loads(result.stdout)
     assert transfer_data.get("ok"), f"Transfer not successful: {transfer_data}"
     print(f"✓ Transfer executed (block: {transfer_data.get('block')})")
-    
+
     # Get sender's balance after transfer (subaccount 1)
     result = icw("-n", "local", "balance", "-s", "1", "-l", local_ledger)
     assert result.returncode == 0, f"Failed to get sender balance after: {result.stderr}"
     sender_after = json.loads(result.stdout)
     sender_balance_after = sender_after["raw"]
     print(f"Sender (subaccount 1) balance after: {sender_after['balance']} ckBTC (raw: {sender_balance_after})")
-    
+
     # Get receiver's balance after transfer (subaccount 2)
     result = icw("-n", "local", "balance", "-s", "2", "-l", local_ledger)
     assert result.returncode == 0, f"Failed to get receiver balance after: {result.stderr}"
     receiver_after = json.loads(result.stdout)
     receiver_balance_after = receiver_after["raw"]
     print(f"Receiver (subaccount 2) balance after: {receiver_after['balance']} ckBTC (raw: {receiver_balance_after})")
-    
+
     # Verify sender's balance decreased by transfer amount + fee
     expected_sender_decrease = transfer_amount_raw + fee_raw
     actual_sender_decrease = sender_balance_before - sender_balance_after
-    assert actual_sender_decrease == expected_sender_decrease, \
-        f"Sender balance decreased by {actual_sender_decrease}, expected {expected_sender_decrease}"
+    assert (
+        actual_sender_decrease == expected_sender_decrease
+    ), f"Sender balance decreased by {actual_sender_decrease}, expected {expected_sender_decrease}"
     print(f"✓ Sender balance decreased correctly by {actual_sender_decrease} (amount + fee)")
-    
+
     # Verify receiver's balance increased by transfer amount (no fee deducted from receiver)
     expected_receiver_increase = transfer_amount_raw
     actual_receiver_increase = receiver_balance_after - receiver_balance_before
-    assert actual_receiver_increase == expected_receiver_increase, \
-        f"Receiver balance increased by {actual_receiver_increase}, expected {expected_receiver_increase}"
+    assert (
+        actual_receiver_increase == expected_receiver_increase
+    ), f"Receiver balance increased by {actual_receiver_increase}, expected {expected_receiver_increase}"
     print(f"✓ Receiver balance increased correctly by {actual_receiver_increase}")
-    
+
     print("✓ Transfer verified: balances match expected values")
 
 

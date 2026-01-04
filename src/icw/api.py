@@ -270,14 +270,16 @@ async def get_account_balances(account: str, network: str = "ic", ledgers: str =
             human = bal / 10**dec
             price = get_usd_price(cg_id) if network == "ic" else None
             usd = round(human * price, 2) if price else None
-            balances.append({
-                "token": name,
-                "balance": human,
-                "raw": bal,
-                "usd": usd,
-                "price": price,
-                "ledger": ledger_id,
-            })
+            balances.append(
+                {
+                    "token": name,
+                    "balance": human,
+                    "raw": bal,
+                    "usd": usd,
+                    "price": price,
+                    "ledger": ledger_id,
+                }
+            )
         except Exception:
             balances.append({"token": TOKENS[token][1], "balance": 0, "error": True})
     return {"balances": balances, "account": account}
@@ -336,78 +338,78 @@ async def get_transactions(
         )
 
         transactions = []
-        total = 0
 
         if isinstance(result, dict):
             if "Ok" in result:
                 data = result["Ok"]
-                total = int(str(data.get("balance", "0")).replace("_", ""))
-                
+
                 for tx_entry in data.get("transactions", []):
                     try:
                         tx_id = tx_entry.get("id", 0)
                         if isinstance(tx_id, str):
                             tx_id = int(tx_id.replace("_", ""))
-                        
+
                         tx = tx_entry.get("transaction", {})
                         kind = tx.get("kind", "unknown")
                         timestamp = tx.get("timestamp")
                         if isinstance(timestamp, str):
                             timestamp = int(timestamp.replace("_", ""))
-                        
+
                         from_account = None
                         to_account = None
                         amount = 0
-                        
+
                         # Parse based on transaction kind
                         if kind == "transfer" and tx.get("transfer"):
                             transfer = tx["transfer"]
                             if isinstance(transfer, list) and len(transfer) > 0:
                                 transfer = transfer[0]
-                            
+
                             if "from" in transfer:
                                 from_acc = transfer["from"]
                                 from_account = from_acc.get("owner", "")
                             if "to" in transfer:
                                 to_acc = transfer["to"]
                                 to_account = to_acc.get("owner", "")
-                            
+
                             amt = transfer.get("amount", "0")
                             amount = int(str(amt).replace("_", ""))
-                        
+
                         elif kind == "mint" and tx.get("mint"):
                             mint = tx["mint"]
                             if isinstance(mint, list) and len(mint) > 0:
                                 mint = mint[0]
-                            
+
                             if "to" in mint:
                                 to_acc = mint["to"]
                                 to_account = to_acc.get("owner", "")
-                            
+
                             amt = mint.get("amount", "0")
                             amount = int(str(amt).replace("_", ""))
-                        
+
                         elif kind == "burn" and tx.get("burn"):
                             burn = tx["burn"]
                             if isinstance(burn, list) and len(burn) > 0:
                                 burn = burn[0]
-                            
+
                             if "from" in burn:
                                 from_acc = burn["from"]
                                 from_account = from_acc.get("owner", "")
-                            
+
                             amt = burn.get("amount", "0")
                             amount = int(str(amt).replace("_", ""))
 
-                        transactions.append({
-                            "block": tx_id,
-                            "type": kind,
-                            "from": from_account,
-                            "to": to_account,
-                            "amount": amount / 10**dec,
-                            "amount_raw": amount,
-                            "timestamp": timestamp,
-                        })
+                        transactions.append(
+                            {
+                                "block": tx_id,
+                                "type": kind,
+                                "from": from_account,
+                                "to": to_account,
+                                "amount": amount / 10**dec,
+                                "amount_raw": amount,
+                                "timestamp": timestamp,
+                            }
+                        )
 
                     except Exception:
                         continue
