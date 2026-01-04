@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICW Explorer</title>
+    <link rel="icon" type="image/png" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .token-icon { font-size: 1.5rem; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div x-data="explorer()" x-init="init()" class="max-w-5xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-3">
+                <a href="/" class="flex items-center gap-3 hover:opacity-80 transition">
+                    <img src="/logo.png" alt="ICW" class="h-10 w-10">
+                    <h1 class="text-xl font-semibold text-gray-900">ICW Explorer</h1>
+                </a>
+            </div>
+            <div class="flex items-center gap-4">
+                <!-- Network selector -->
+                <select x-model="network" @change="refresh()" 
+                    class="text-sm border-0 bg-gray-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-200">
+                    <option value="ic">Mainnet</option>
+                    <option value="local">Local</option>
+                </select>
+                <!-- Back to wallet -->
+                <a href="/" class="text-sm text-gray-600 hover:text-gray-900 transition">
+                    ← Wallet
+                </a>
+            </div>
+        </header>
+
+        <!-- Local network configuration -->
+        <div x-show="network === 'local'" x-cloak 
+             class="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-6">
+            <div class="flex items-center gap-2 mb-4">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <h3 class="font-semibold text-amber-800">Local Network Configuration</h3>
+            </div>
+            <p class="text-sm text-amber-700 mb-4">Enter your local ledger and index canister IDs.</p>
+            
+            <!-- Ledger Canisters -->
+            <p class="text-xs font-medium text-amber-700 mb-2">Ledger Canisters</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <template x-for="t in ['ckbtc', 'cketh', 'icp', 'ckusdc', 'ckusdt']" :key="t">
+                    <div>
+                        <label class="block text-xs font-medium text-amber-700 mb-1" x-text="t.toUpperCase()"></label>
+                        <input type="text" x-model="localLedgers[t]" 
+                               :placeholder="t + '_ledger'"
+                               class="w-full px-3 py-2 text-xs rounded-lg border border-amber-200 bg-white focus:border-amber-400 focus:ring-0 font-mono">
+                    </div>
+                </template>
+            </div>
+            
+            <!-- Index Canisters -->
+            <p class="text-xs font-medium text-amber-700 mb-2">Index Canisters (for transaction history)</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <template x-for="t in ['ckbtc', 'cketh', 'icp', 'ckusdc', 'ckusdt']" :key="'idx-' + t">
+                    <div>
+                        <label class="block text-xs font-medium text-amber-700 mb-1" x-text="t.toUpperCase() + ' Index'"></label>
+                        <input type="text" x-model="localIndexes[t]" 
+                               :placeholder="t + '_index'"
+                               class="w-full px-3 py-2 text-xs rounded-lg border border-amber-200 bg-white focus:border-amber-400 focus:ring-0 font-mono">
+                    </div>
+                </template>
+            </div>
+            
+            <div class="mt-4 flex gap-2">
+                <button @click="refresh()" 
+                        class="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition">
+                    Apply & Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Account Search -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Account Lookup</h2>
+            <div class="flex gap-3">
+                <input type="text" x-model="searchAccount" 
+                       placeholder="Enter principal ID (leave empty for your account)"
+                       class="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 font-mono text-sm">
+                <button @click="lookup()" 
+                        :disabled="loading"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50">
+                    <span x-show="!loading">Search</span>
+                    <span x-show="loading" class="flex items-center gap-2">
+                        <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        Loading
+                    </span>
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+                Currently viewing: <span class="font-mono" x-text="account || 'your account'"></span>
+            </p>
+        </div>
+
+        <!-- Balances -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Balances</h2>
+                <button @click="refreshBalances()" 
+                        :disabled="loadingBalances"
+                        class="p-2 hover:bg-gray-100 rounded-lg transition"
+                        title="Refresh balances">
+                    <svg class="w-5 h-5 text-gray-500" :class="loadingBalances && 'animate-spin'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div x-show="balances.length === 0 && !loadingBalances" class="text-center py-8 text-gray-500">
+                No balances found
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="bal in balances" :key="bal.token">
+                    <div class="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition cursor-pointer"
+                         @click="selectedToken = bal.token.toLowerCase(); refreshTransactions()">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-2xl" x-text="tokenIcon(bal.token)"></span>
+                            <div>
+                                <p class="font-semibold text-gray-900" x-text="bal.token"></p>
+                                <p class="text-xs text-gray-500 font-mono" x-text="bal.ledger ? bal.ledger.slice(0, 10) + '...' : ''"></p>
+                            </div>
+                        </div>
+                        <p class="text-xl font-bold text-gray-900" x-text="formatBalance(bal.balance)"></p>
+                        <p class="text-sm text-gray-500" x-show="bal.usd !== null" x-text="formatUSD(bal.usd)"></p>
+                        <p class="text-xs text-red-500" x-show="bal.error">Error loading</p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Token selector for transactions -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Transaction History</h2>
+                <div class="flex items-center gap-3">
+                    <select x-model="selectedToken" @change="refreshTransactions()"
+                            class="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-100">
+                        <option value="ckbtc">ckBTC</option>
+                        <option value="cketh">ckETH</option>
+                        <option value="icp">ICP</option>
+                        <option value="ckusdc">ckUSDC</option>
+                        <option value="ckusdt">ckUSDT</option>
+                    </select>
+                    <button @click="refreshTransactions()" 
+                            :disabled="loadingTx"
+                            class="p-2 hover:bg-gray-100 rounded-lg transition"
+                            title="Refresh transactions">
+                        <svg class="w-5 h-5 text-gray-500" :class="loadingTx && 'animate-spin'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div x-show="txError" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                <span x-text="txError"></span>
+            </div>
+
+            <div x-show="transactions.length === 0 && !loadingTx && !txError" class="text-center py-8 text-gray-500">
+                No transactions found for this account
+            </div>
+
+            <div x-show="loadingTx" class="text-center py-8">
+                <svg class="animate-spin h-8 w-8 mx-auto text-blue-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <p class="mt-2 text-gray-500">Loading transactions...</p>
+            </div>
+
+            <!-- Transactions table -->
+            <div x-show="transactions.length > 0" class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-xs text-gray-500 uppercase tracking-wider border-b">
+                            <th class="pb-3 pr-4">Block</th>
+                            <th class="pb-3 pr-4">Type</th>
+                            <th class="pb-3 pr-4">From</th>
+                            <th class="pb-3 pr-4">To</th>
+                            <th class="pb-3 pr-4 text-right">Amount</th>
+                            <th class="pb-3 text-right">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <template x-for="tx in transactions" :key="tx.block">
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-3 pr-4">
+                                    <span class="font-mono text-sm text-blue-600" x-text="tx.block"></span>
+                                </td>
+                                <td class="py-3 pr-4">
+                                    <span class="px-2 py-1 text-xs rounded-full font-medium"
+                                          :class="{
+                                              'bg-green-100 text-green-700': tx.type === 'mint',
+                                              'bg-red-100 text-red-700': tx.type === 'burn',
+                                              'bg-blue-100 text-blue-700': tx.type === 'xfer' || tx.type === 'transfer',
+                                              'bg-gray-100 text-gray-700': !['mint', 'burn', 'xfer', 'transfer'].includes(tx.type)
+                                          }"
+                                          x-text="formatTxType(tx.type)"></span>
+                                </td>
+                                <td class="py-3 pr-4">
+                                    <span class="font-mono text-xs text-gray-600" 
+                                          x-text="tx.from ? formatPrincipal(tx.from) : '—'"
+                                          :title="tx.from || ''"></span>
+                                </td>
+                                <td class="py-3 pr-4">
+                                    <span class="font-mono text-xs text-gray-600" 
+                                          x-text="tx.to ? formatPrincipal(tx.to) : '—'"
+                                          :title="tx.to || ''"></span>
+                                </td>
+                                <td class="py-3 pr-4 text-right">
+                                    <span class="font-medium" 
+                                          :class="isOutgoing(tx) ? 'text-red-600' : 'text-green-600'"
+                                          x-text="(isOutgoing(tx) ? '-' : '+') + formatAmount(tx.amount)"></span>
+                                </td>
+                                <td class="py-3 text-right text-xs text-gray-500" x-text="formatTimestamp(tx.timestamp)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <div x-show="totalBlocks > 0" class="mt-4 pt-4 border-t text-sm text-gray-500 flex justify-between items-center">
+                <span>Total blocks in ledger: <span class="font-mono" x-text="totalBlocks.toLocaleString()"></span></span>
+                <span>Showing <span x-text="transactions.length"></span> transactions for this account</span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-xs text-gray-400 mt-8">
+            <a href="/" class="hover:text-gray-600">ICW Wallet</a> · 
+            <span>Explorer</span>
+        </footer>
+    </div>
+
+    <script>
+        function explorer() {
+            return {
+                network: 'ic',
+                account: '',
+                searchAccount: '',
+                balances: [],
+                transactions: [],
+                selectedToken: 'ckbtc',
+                loading: false,
+                loadingBalances: false,
+                loadingTx: false,
+                txError: '',
+                totalBlocks: 0,
+                localLedgers: {},
+                localIndexes: {},
+
+                async init() {
+                    // Load config
+                    try {
+                        const res = await fetch('/api/config');
+                        const data = await res.json();
+                        this.network = data.network || 'ic';
+                        this.localLedgers = data.ledgers || {};
+                        this.localIndexes = data.indexes || {};
+                    } catch (e) {
+                        console.error('Failed to load config:', e);
+                    }
+
+                    // Check URL for account parameter
+                    const params = new URLSearchParams(window.location.search);
+                    const urlAccount = params.get('account') || params.get('principal');
+                    if (urlAccount) {
+                        this.searchAccount = urlAccount;
+                    }
+
+                    // Get current identity's principal as default
+                    try {
+                        const res = await fetch('/api/identity');
+                        const data = await res.json();
+                        if (!this.searchAccount) {
+                            this.account = data.principal;
+                        } else {
+                            this.account = this.searchAccount;
+                        }
+                    } catch (e) {
+                        console.error('Failed to load identity:', e);
+                    }
+
+                    await this.refresh();
+                },
+
+                async lookup() {
+                    this.account = this.searchAccount || this.account;
+                    // Update URL
+                    const url = new URL(window.location);
+                    if (this.searchAccount) {
+                        url.searchParams.set('account', this.searchAccount);
+                    } else {
+                        url.searchParams.delete('account');
+                    }
+                    window.history.replaceState({}, '', url);
+                    await this.refresh();
+                },
+
+                async refresh() {
+                    this.loading = true;
+                    await Promise.all([
+                        this.refreshBalances(),
+                        this.refreshTransactions()
+                    ]);
+                    this.loading = false;
+                },
+
+                async refreshBalances() {
+                    if (!this.account) return;
+                    this.loadingBalances = true;
+                    try {
+                        let url = `/api/account/${encodeURIComponent(this.account)}/balances?network=${this.network}`;
+                        if (this.network === 'local' && Object.keys(this.localLedgers).length > 0) {
+                            url += `&ledgers=${encodeURIComponent(JSON.stringify(this.localLedgers))}`;
+                        }
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        this.balances = data.balances || [];
+                    } catch (e) {
+                        console.error('Failed to load balances:', e);
+                    } finally {
+                        this.loadingBalances = false;
+                    }
+                },
+
+                async refreshTransactions() {
+                    if (!this.account) return;
+                    this.loadingTx = true;
+                    this.txError = '';
+                    try {
+                        let url = `/api/transactions/${this.selectedToken}?account=${encodeURIComponent(this.account)}&network=${this.network}&limit=50`;
+                        if (this.network === 'local') {
+                            if (this.localLedgers[this.selectedToken]) {
+                                url += `&ledger=${encodeURIComponent(this.localLedgers[this.selectedToken])}`;
+                            }
+                            if (this.localIndexes[this.selectedToken]) {
+                                url += `&index=${encodeURIComponent(this.localIndexes[this.selectedToken])}`;
+                            }
+                        }
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        if (data.detail) {
+                            this.txError = data.detail;
+                            this.transactions = [];
+                        } else if (data.error) {
+                            this.txError = data.error;
+                            this.transactions = [];
+                        } else {
+                            this.transactions = data.transactions || [];
+                            this.totalBlocks = data.total || 0;
+                        }
+                    } catch (e) {
+                        console.error('Failed to load transactions:', e);
+                        this.txError = 'Failed to load transactions: ' + e.message;
+                    } finally {
+                        this.loadingTx = false;
+                    }
+                },
+
+                tokenIcon(token) {
+                    const icons = { 'ckBTC': '₿', 'ckETH': 'Ξ', 'ICP': '∞', 'ckUSDC': '$', 'ckUSDT': '$' };
+                    return icons[token] || '●';
+                },
+
+                formatBalance(bal) {
+                    if (bal === undefined || bal === null) return '—';
+                    if (bal === 0) return '0';
+                    if (bal < 0.00001) return bal.toExponential(2);
+                    return bal.toLocaleString(undefined, { maximumFractionDigits: 8 });
+                },
+
+                formatAmount(amount) {
+                    if (amount === undefined || amount === null) return '0';
+                    const num = parseFloat(amount);
+                    if (num === 0) return '0';
+                    if (num < 0.00001) return num.toExponential(2);
+                    return num.toFixed(8).replace(/\.?0+$/, '');
+                },
+
+                formatUSD(amount) {
+                    if (amount === null || amount === undefined || isNaN(amount)) return '$0.00';
+                    if (amount < 0.01 && amount > 0) return '<$0.01';
+                    return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                },
+
+                formatPrincipal(p) {
+                    if (!p) return '—';
+                    const s = String(p);
+                    if (s.length <= 20) return s;
+                    return s.slice(0, 10) + '...' + s.slice(-5);
+                },
+
+                formatTxType(type) {
+                    const types = {
+                        'xfer': 'Transfer',
+                        'transfer': 'Transfer',
+                        'mint': 'Mint',
+                        'burn': 'Burn',
+                        'approve': 'Approve'
+                    };
+                    return types[type] || type;
+                },
+
+                formatTimestamp(ts) {
+                    if (!ts) return '—';
+                    // ICRC timestamps are in nanoseconds
+                    const ms = ts > 1e15 ? ts / 1e6 : ts > 1e12 ? ts / 1e3 : ts;
+                    const date = new Date(ms);
+                    if (isNaN(date.getTime())) return '—';
+                    return date.toLocaleString();
+                },
+
+                isOutgoing(tx) {
+                    if (!this.account) return false;
+                    return tx.from && String(tx.from).includes(this.account);
+                }
+            };
+        }
+    </script>
+</body>
+</html>
