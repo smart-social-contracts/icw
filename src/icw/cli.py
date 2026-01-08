@@ -16,6 +16,7 @@ TOKENS = {
     "icp": ("ryjl3-tyaaa-aaaaa-aaaba-cai", "ICP", 8, 10000, "internet-computer"),
     "ckusdc": ("xevnm-gaaaa-aaaar-qafnq-cai", "ckUSDC", 6, 10000, "usd-coin"),
     "ckusdt": ("cngnf-vqaaa-aaaar-qag4q-cai", "ckUSDT", 6, 10000, "tether"),
+    "realms": ("xbkkh-syaaa-aaaah-qq3ya-cai", "REALMS", 8, 10000, None),  # Custom token, no CoinGecko
 }
 
 
@@ -86,6 +87,10 @@ def detect_local_canisters():
         "ckusdt_ledger": "ckusdt",
         "ckusdt-ledger": "ckusdt",
         "ckusdt": "ckusdt",
+        "realms_ledger": "realms",
+        "realms-ledger": "realms",
+        "realms": "realms",
+        "token_backend": "realms",
     }
 
     # Try canister_ids.json first (for local network)

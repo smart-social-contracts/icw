@@ -291,6 +291,7 @@ INDEX_CANISTERS = {
     "icp": "qhbym-qaaaa-aaaaa-aaafq-cai",
     "ckusdc": "xrs4b-hiaaa-aaaar-qafoa-cai",
     "ckusdt": "cqdrk-hyaaa-aaaar-qag5a-cai",
+    "realms": "xbkkh-syaaa-aaaah-qq3ya-cai",  # Same canister provides ledger + indexer
 }
 
 

@@ -2,7 +2,7 @@
 
 Simple CLI and Web UI for managing ICRC-1 tokens on the Internet Computer.
 
-**Supported tokens:** ckBTC, ckETH, ICP, ckUSDC, ckUSDT
+**Supported tokens:** ckBTC, ckETH, ICP, ckUSDC, ckUSDT, REALMS
 
 > ⚠️ **WARNING**: This is experimental software. Do not use with significant amounts of funds. Use at your own risk.
 
@@ -55,6 +55,7 @@ icw -t cketh balance              # ckETH
 icw -t icp balance                # ICP
 icw -t ckusdc balance             # ckUSDC
 icw -t ckusdt balance             # ckUSDT
+icw -t realms balance             # REALMS
 icw balance -p <principal> -s 1   # specific principal + subaccount
 
 # Subaccounts (integer, hex, or text)
@@ -99,7 +100,7 @@ All commands output JSON for easy parsing:
 
 ## Options
 
-- `-t, --token`: Token (ckbtc, cketh, icp, ckusdc, ckusdt). Default: ckbtc
+- `-t, --token`: Token (ckbtc, cketh, icp, ckusdc, ckusdt, realms). Default: ckbtc
 - `-n, --network`: Network (ic, local). Default: ic
 - `--ledger`: Override ledger canister ID (for local testing)
 - `--fee`: Override transfer fee (for local testing)
