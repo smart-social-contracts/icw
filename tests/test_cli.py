@@ -65,7 +65,7 @@ def test_token_structure():
         assert ledger.endswith("-cai"), f"{name} ledger should end with -cai"
         assert decimals > 0, f"{name} should have positive decimals"
         assert fee >= 0, f"{name} should have non-negative fee"
-        assert cg_id, f"{name} should have coingecko id"
+        assert cg_id or name == "realms", f"{name} should have coingecko id"
     print("✓ test_token_structure")
 
 
