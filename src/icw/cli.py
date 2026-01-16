@@ -164,6 +164,34 @@ def principal():
     ).stdout.strip()
 
 
+def get_current_identity():
+    """Get the name of the currently active dfx identity."""
+    return subprocess.run(
+        ["dfx", "identity", "whoami"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+class use_identity:
+    """Context manager to temporarily switch dfx identity."""
+    def __init__(self, identity_name):
+        self.identity_name = identity_name
+        self.original_identity = None
+    
+    def __enter__(self):
+        if self.identity_name:
+            self.original_identity = get_current_identity()
+            if self.original_identity != self.identity_name:
+                subprocess.run(["dfx", "identity", "use", self.identity_name], 
+                             capture_output=True, check=True)
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.original_identity and self.original_identity != self.identity_name:
+            subprocess.run(["dfx", "identity", "use", self.original_identity],
+                         capture_output=True, check=True)
+        return False
+
+
 def cmd_id(args):
     """Identity management."""
     ensure_dfx()
@@ -265,20 +293,23 @@ def cmd_balance(args):
         ledger = local_ledgers.get(args.token) or ledger
     else:
         ledger = args.ledger or ledger  # allow override for testing
-    p = args.principal or principal()
-    bal = int(
-        dfx(
-            [
-                "canister",
-                "call",
-                ledger,
-                "icrc1_balance_of",
-                f'(record {{ owner = principal "{p}"; subaccount = {subaccount(args.subaccount)}; }})',
-            ],
-            args.network,
+    
+    identity = getattr(args, 'identity', None)
+    with use_identity(identity):
+        p = args.principal or principal()
+        bal = int(
+            dfx(
+                [
+                    "canister",
+                    "call",
+                    ledger,
+                    "icrc1_balance_of",
+                    f'(record {{ owner = principal "{p}"; subaccount = {subaccount(args.subaccount)}; }})',
+                ],
+                args.network,
+            )
+            or 0
         )
-        or 0
-    )
     human = bal / 10**dec
     price = get_usd_price(cg_id)
     usd = round(human * price, 2) if price else None
@@ -296,16 +327,19 @@ def cmd_transfer(args):
     fee = args.fee if args.fee is not None else fee  # allow override for testing
     amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
     memo_val = memo(args.memo) if hasattr(args, "memo") else "null"
-    r = dfx(
-        [
-            "canister",
-            "call",
-            ledger,
-            "icrc1_transfer",
-            f'(record {{ to = record {{ owner = principal "{args.recipient}"; subaccount = {subaccount(args.subaccount)}; }}; amount = {amt}; fee = opt {fee}; memo = {memo_val}; created_at_time = null; from_subaccount = {subaccount(args.from_subaccount)}; }})',
-        ],
-        args.network,
-    )
+    
+    identity = getattr(args, 'identity', None)
+    with use_identity(identity):
+        r = dfx(
+            [
+                "canister",
+                "call",
+                ledger,
+                "icrc1_transfer",
+                f'(record {{ to = record {{ owner = principal "{args.recipient}"; subaccount = {subaccount(args.subaccount)}; }}; amount = {amt}; fee = opt {fee}; memo = {memo_val}; created_at_time = null; from_subaccount = {subaccount(args.from_subaccount)}; }})',
+            ],
+            args.network,
+        )
     result = (
         {"ok": True, "block": r["Ok"], "token": name, "amount": amt / 10**dec, "to": args.recipient}
         if isinstance(r, dict) and "Ok" in r
@@ -437,6 +471,7 @@ def main():
     b.add_argument("--principal", "-p")
     b.add_argument("--subaccount", "-s", default="0")
     b.add_argument("--ledger", "-l", help="Override ledger canister ID")
+    b.add_argument("--identity", "-i", help="dfx identity to use (temporarily switches)")
 
     t = sub.add_parser("transfer", aliases=["t"])
     t.add_argument("recipient")
@@ -446,6 +481,7 @@ def main():
     t.add_argument("--ledger", "-l", help="Override ledger canister ID")
     t.add_argument("--fee", type=int, help="Override transfer fee")
     t.add_argument("--memo", "-m", help="Transaction memo/tag (max 32 bytes)")
+    t.add_argument("--identity", "-i", help="dfx identity to use (temporarily switches)")
 
     sub.add_parser("info", aliases=["i"])
 
