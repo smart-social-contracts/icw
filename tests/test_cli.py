@@ -131,6 +131,7 @@ def test_mint_command_exists():
 
     # Verify mint is in the parser by checking help output
     import subprocess
+
     result = subprocess.run(["icw", "mint", "--help"], capture_output=True, text=True)
     assert result.returncode == 0, f"mint --help should succeed: {result.stderr}"
     assert "amount" in result.stdout.lower(), "mint should have amount argument"
@@ -142,7 +143,7 @@ def test_mint_command_exists():
 def test_mint_command_args():
     """Test mint command argument parsing."""
     import subprocess
-    
+
     # Test 'm' alias works
     result = subprocess.run(["icw", "m", "--help"], capture_output=True, text=True)
     assert result.returncode == 0, f"mint alias 'm' should work: {result.stderr}"

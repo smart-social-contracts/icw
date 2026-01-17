@@ -166,29 +166,26 @@ def principal():
 
 def get_current_identity():
     """Get the name of the currently active dfx identity."""
-    return subprocess.run(
-        ["dfx", "identity", "whoami"], capture_output=True, text=True, check=True
-    ).stdout.strip()
+    return subprocess.run(["dfx", "identity", "whoami"], capture_output=True, text=True, check=True).stdout.strip()
 
 
 class use_identity:
     """Context manager to temporarily switch dfx identity."""
+
     def __init__(self, identity_name):
         self.identity_name = identity_name
         self.original_identity = None
-    
+
     def __enter__(self):
         if self.identity_name:
             self.original_identity = get_current_identity()
             if self.original_identity != self.identity_name:
-                subprocess.run(["dfx", "identity", "use", self.identity_name], 
-                             capture_output=True, check=True)
+                subprocess.run(["dfx", "identity", "use", self.identity_name], capture_output=True, check=True)
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.original_identity and self.original_identity != self.identity_name:
-            subprocess.run(["dfx", "identity", "use", self.original_identity],
-                         capture_output=True, check=True)
+            subprocess.run(["dfx", "identity", "use", self.original_identity], capture_output=True, check=True)
         return False
 
 
@@ -293,8 +290,8 @@ def cmd_balance(args):
         ledger = local_ledgers.get(args.token) or ledger
     else:
         ledger = args.ledger or ledger  # allow override for testing
-    
-    identity = getattr(args, 'identity', None)
+
+    identity = getattr(args, "identity", None)
     with use_identity(identity):
         p = args.principal or principal()
         bal = int(
@@ -327,8 +324,8 @@ def cmd_transfer(args):
     fee = args.fee if args.fee is not None else fee  # allow override for testing
     amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
     memo_val = memo(args.memo) if hasattr(args, "memo") else "null"
-    
-    identity = getattr(args, 'identity', None)
+
+    identity = getattr(args, "identity", None)
     with use_identity(identity):
         r = dfx(
             [
@@ -381,10 +378,10 @@ def cmd_mint(args):
         ledger = local_ledgers.get(args.token) or ledger
     else:
         ledger = args.ledger or ledger
-    
+
     p = args.recipient or principal()
     amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
-    
+
     r = dfx(
         [
             "canister",
@@ -395,17 +392,19 @@ def cmd_mint(args):
         ],
         args.network,
     )
-    
+
     if isinstance(r, dict):
         if r.get("success"):
-            output({
-                "ok": True,
-                "block": r.get("block_index"),
-                "token": name,
-                "amount": amt / 10**dec,
-                "to": p,
-                "new_balance": r.get("new_balance"),
-            })
+            output(
+                {
+                    "ok": True,
+                    "block": r.get("block_index"),
+                    "token": name,
+                    "amount": amt / 10**dec,
+                    "to": p,
+                    "new_balance": r.get("new_balance"),
+                }
+            )
         elif r.get("error"):
             output({"ok": False, "error": r["error"]})
         else:
