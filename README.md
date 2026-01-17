@@ -69,6 +69,11 @@ icw transfer <recipient> 0.001 -s 1 -f 2       # to subaccount 1, from subaccoun
 icw transfer <recipient> 0.001 -s savings      # to "savings" subaccount
 icw transfer <recipient> 0.001 -m invoice_123  # with memo/tag
 
+# Mint tokens (NON-STANDARD - requires canister with 'mint' method)
+icw mint 100                                   # mint to self
+icw mint 100 -r <principal>                    # mint to recipient
+icw mint 100 --ledger <canister_id>            # custom ledger
+
 # Token info + current price
 icw info                          # ckBTC (default)
 icw -t icp info                   # ICP

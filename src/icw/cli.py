@@ -372,6 +372,48 @@ def cmd_info(args):
     )
 
 
+def cmd_mint(args):
+    """Mint tokens (NON-STANDARD: requires canister with 'mint' method)."""
+    ledger, name, dec, _, _ = TOKENS[args.token]
+    # Auto-detect local ledgers if on local network
+    if args.network == "local" and not args.ledger:
+        local_ledgers = detect_local_canisters()
+        ledger = local_ledgers.get(args.token) or ledger
+    else:
+        ledger = args.ledger or ledger
+    
+    p = args.recipient or principal()
+    amt = int(float(args.amount) * 10**dec) if "." in args.amount else int(args.amount)
+    
+    r = dfx(
+        [
+            "canister",
+            "call",
+            ledger,
+            "mint",
+            f'(record {{ to = record {{ owner = principal "{p}"; subaccount = {subaccount(args.subaccount)}; }}; amount = {amt} : nat }})',
+        ],
+        args.network,
+    )
+    
+    if isinstance(r, dict):
+        if r.get("success"):
+            output({
+                "ok": True,
+                "block": r.get("block_index"),
+                "token": name,
+                "amount": amt / 10**dec,
+                "to": p,
+                "new_balance": r.get("new_balance"),
+            })
+        elif r.get("error"):
+            output({"ok": False, "error": r["error"]})
+        else:
+            output({"result": r})
+    else:
+        output({"result": r})
+
+
 def cmd_ui(args):
     """Launch the web UI."""
     try:
@@ -483,6 +525,12 @@ def main():
     t.add_argument("--memo", "-m", help="Transaction memo/tag (max 32 bytes)")
     t.add_argument("--identity", "-i", help="dfx identity to use (temporarily switches)")
 
+    m = sub.add_parser("mint", aliases=["m"], help="Mint tokens (NON-STANDARD)")
+    m.add_argument("amount")
+    m.add_argument("--recipient", "-r", help="Recipient principal (default: self)")
+    m.add_argument("--subaccount", "-s", default="0")
+    m.add_argument("--ledger", "-l", help="Override ledger canister ID")
+
     sub.add_parser("info", aliases=["i"])
 
     i = sub.add_parser("id", help="Identity management")
@@ -507,6 +555,8 @@ def main():
         "b": cmd_balance,
         "transfer": cmd_transfer,
         "t": cmd_transfer,
+        "mint": cmd_mint,
+        "m": cmd_mint,
         "info": cmd_info,
         "i": cmd_info,
         "id": cmd_id,
