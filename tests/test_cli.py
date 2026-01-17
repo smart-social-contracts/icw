@@ -122,6 +122,34 @@ def test_price_cache():
     print("✓ test_price_cache")
 
 
+def test_mint_command_exists():
+    """Test that mint command is registered in CLI."""
+    from icw.cli import cmd_mint
+
+    # Verify cmd_mint function exists and is callable
+    assert callable(cmd_mint), "cmd_mint should be callable"
+
+    # Verify mint is in the parser by checking help output
+    import subprocess
+    result = subprocess.run(["icw", "mint", "--help"], capture_output=True, text=True)
+    assert result.returncode == 0, f"mint --help should succeed: {result.stderr}"
+    assert "amount" in result.stdout.lower(), "mint should have amount argument"
+    assert "recipient" in result.stdout.lower(), "mint should have recipient option"
+    assert "ledger" in result.stdout.lower(), "mint should have ledger option"
+    print("✓ test_mint_command_exists")
+
+
+def test_mint_command_args():
+    """Test mint command argument parsing."""
+    import subprocess
+    
+    # Test 'm' alias works
+    result = subprocess.run(["icw", "m", "--help"], capture_output=True, text=True)
+    assert result.returncode == 0, f"mint alias 'm' should work: {result.stderr}"
+    assert "NON-STANDARD" in result.stdout or "amount" in result.stdout.lower(), "should show mint help"
+    print("✓ test_mint_command_args")
+
+
 if __name__ == "__main__":
     test_tokens()
     test_subaccount()
@@ -129,4 +157,6 @@ if __name__ == "__main__":
     test_token_structure()
     test_detect_local_canisters()
     test_price_cache()
+    test_mint_command_exists()
+    test_mint_command_args()
     print("\nAll tests passed!")
