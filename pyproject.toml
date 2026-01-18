@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "internet-computer-wallet"
-version = "0.3.2"
+version = "0.3.3"
 description = "CLI for ICRC-1 tokens (ckBTC, ckETH, ICP, ckUSDC, ckUSDT) on the Internet Computer"
 readme = "README.md"
 license = {text = "MIT"}
