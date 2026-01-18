@@ -146,6 +146,25 @@ def ensure_dfx():
         sys.exit("Install failed. Add ~/.local/share/dfx/bin to PATH")
 
 
+# Candid field hash to name mappings (for when .did file is not available)
+CANDID_HASH_MAP = {
+    # MintResult fields
+    "3_092_129_219": "success",
+    "624_086_880": "block_index",
+    "2_825_987_837": "new_balance",
+    "1_932_118_984": "error",
+}
+
+
+def normalize_candid_response(obj):
+    """Recursively replace Candid hash keys with field names."""
+    if isinstance(obj, dict):
+        return {CANDID_HASH_MAP.get(k, k): normalize_candid_response(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [normalize_candid_response(v) for v in obj]
+    return obj
+
+
 def dfx(args, network="ic"):
     """Run dfx command, return parsed JSON."""
     ensure_dfx()
@@ -153,7 +172,8 @@ def dfx(args, network="ic"):
     if r.returncode != 0:
         sys.exit(f"Error: {r.stderr.strip()}")
     try:
-        return json.loads(r.stdout)
+        result = json.loads(r.stdout)
+        return normalize_candid_response(result)
     except json.JSONDecodeError:
         return r.stdout.strip().replace("_", "").replace('"', "")
 

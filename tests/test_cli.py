@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, "src")
 
-from icw.cli import TOKENS, subaccount, memo
+from icw.cli import TOKENS, subaccount, memo, normalize_candid_response, CANDID_HASH_MAP
 
 
 def test_tokens():
@@ -151,6 +151,68 @@ def test_mint_command_args():
     print("✓ test_mint_command_args")
 
 
+def test_normalize_candid_response():
+    """Test that Candid hash keys are properly normalized to field names.
+    
+    This catches issues where dfx returns numeric hash keys instead of field names
+    when the .did file is not available (e.g., calling a canister from icw without
+    the local Candid interface).
+    """
+    # Test MintResult hash keys -> field names
+    raw_response = {
+        "3_092_129_219": True,
+        "624_086_880": ["1"],
+        "2_825_987_837": ["100_000_000"],
+        "1_932_118_984": [],
+    }
+    normalized = normalize_candid_response(raw_response)
+    
+    assert "success" in normalized, f"Expected 'success' field, got {normalized.keys()}"
+    assert "block_index" in normalized, f"Expected 'block_index' field, got {normalized.keys()}"
+    assert "new_balance" in normalized, f"Expected 'new_balance' field, got {normalized.keys()}"
+    assert "error" in normalized, f"Expected 'error' field, got {normalized.keys()}"
+    
+    assert normalized["success"] is True
+    assert normalized["block_index"] == ["1"]
+    assert normalized["new_balance"] == ["100_000_000"]
+    assert normalized["error"] == []
+    
+    # Test nested structures
+    nested = {"outer": {"3_092_129_219": True}}
+    normalized_nested = normalize_candid_response(nested)
+    assert normalized_nested["outer"]["success"] is True
+    
+    # Test lists with dicts
+    list_response = [{"3_092_129_219": False}, {"624_086_880": ["2"]}]
+    normalized_list = normalize_candid_response(list_response)
+    assert normalized_list[0]["success"] is False
+    assert normalized_list[1]["block_index"] == ["2"]
+    
+    # Test that unknown keys are preserved
+    unknown = {"unknown_key": "value", "3_092_129_219": True}
+    normalized_unknown = normalize_candid_response(unknown)
+    assert normalized_unknown["unknown_key"] == "value"
+    assert normalized_unknown["success"] is True
+    
+    # Test primitives pass through unchanged
+    assert normalize_candid_response("string") == "string"
+    assert normalize_candid_response(123) == 123
+    assert normalize_candid_response(None) is None
+    
+    print("✓ test_normalize_candid_response")
+
+
+def test_candid_hash_map_completeness():
+    """Test that CANDID_HASH_MAP contains expected MintResult fields."""
+    expected_fields = {"success", "block_index", "new_balance", "error"}
+    actual_fields = set(CANDID_HASH_MAP.values())
+    
+    for field in expected_fields:
+        assert field in actual_fields, f"Missing field '{field}' in CANDID_HASH_MAP"
+    
+    print("✓ test_candid_hash_map_completeness")
+
+
 if __name__ == "__main__":
     test_tokens()
     test_subaccount()
@@ -160,4 +222,6 @@ if __name__ == "__main__":
     test_price_cache()
     test_mint_command_exists()
     test_mint_command_args()
+    test_normalize_candid_response()
+    test_candid_hash_map_completeness()
     print("\nAll tests passed!")
