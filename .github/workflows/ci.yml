@@ -9,8 +9,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff black
-      - run: ruff check src/ tests/
-      - run: black --check src/ tests/
+      - run: ./run_linters.sh
 
   test:
     runs-on: ubuntu-latest
