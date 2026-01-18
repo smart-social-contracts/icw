@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Tests for ICW Web API - no browser required."""
+
 import sys
 
 sys.path.insert(0, "src")
 
 from fastapi.testclient import TestClient
 from icw.api import app
-
 
 client = TestClient(app)
 

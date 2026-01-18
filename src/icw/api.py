@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """ICW Web API - FastAPI server for the wallet UI."""
+
 import subprocess
 import webbrowser
 from pathlib import Path

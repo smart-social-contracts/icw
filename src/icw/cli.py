@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """ICW - ICP Wallet CLI for ICRC-1 tokens (ckBTC, ckETH, ICP)."""
+
 import argparse
 
 from icw import __version__

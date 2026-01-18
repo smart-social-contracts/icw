@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Tests for ICW CLI - plain Python, no frameworks."""
+
 import sys
 
 sys.path.insert(0, "src")

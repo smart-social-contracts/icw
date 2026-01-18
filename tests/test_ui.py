@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """UI tests for ICW Web interface using Playwright."""
+
 import subprocess
 import time
 import sys

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Integration tests with local ckBTC ledger canister."""
+
 import json
 import os
 import subprocess
